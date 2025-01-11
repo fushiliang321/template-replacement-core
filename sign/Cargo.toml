@@ -1,0 +1,26 @@
+[package]
+name = "template-replacement-sign-core-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = { path = "../common" }
+wasm-bindgen = { version = "0.2.99" }
+js-sys = "0.3.76"
+wasm-bindgen-futures = "0.4.49"
+
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[features]
+param-sign = []
+default = ["std"]
+std = []
+
+[profile.release]
+opt-level = 3  # 最大化性能
+lto = true       # 启用链接时优化
+codegen-units = 1
+panic = 'abort'  # 出现 panic 时直接终止程序

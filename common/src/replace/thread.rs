@@ -3,7 +3,6 @@ use crate::replace::data::Data;
 use crossbeam_channel::unbounded;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::thread::JoinHandle;
 
 struct MsgData {
@@ -26,7 +25,7 @@ pub struct Thread {
 impl Thread {
     pub fn new(concurrency: u8, data: Arc<Data>) -> Thread {
         let (tx, rx) = unbounded();
-        let mut threads = Vec::new();
+        let threads = Vec::new();
         let mut t = Thread {
             data,
             tx,
@@ -58,7 +57,7 @@ impl Thread {
             self.threads.push(thread::spawn(move || {
                 while let Ok(option) = rx.try_recv() {
                     match option {
-                        Some(mut msg) => {
+                        Some(msg) => {
                             // let id = msg.lock().unwrap().id.clone();
                             // let office_box = Arc::clone(&msg.lock().unwrap().office);
                             // let res = replace(office_box, &data);

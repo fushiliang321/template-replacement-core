@@ -2,7 +2,6 @@ use crate::office::office::Office;
 use crate::office::zip::{new as new_zip, Zip};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::fmt::Display;
 use std::io::{Error, ErrorKind};
 
 static DOCUMENT_FILE_REG_EXP: Lazy<Regex> = Lazy::new(|| {

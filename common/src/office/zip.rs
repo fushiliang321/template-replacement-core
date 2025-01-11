@@ -4,7 +4,7 @@ use async_zip::base::read::mem::ZipFileReader;
 use async_zip::error::ZipError;
 use futures::future::join_all;
 use std::collections::HashMap;
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Write};
 use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
 

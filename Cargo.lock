@@ -995,13 +995,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "template-replacement-core-wasm"
+version = "0.1.1"
+dependencies = [
+ "common",
+]
+
+[[package]]
 name = "template-replacement-sign-core-wasm"
 version = "0.1.0"
 dependencies = [
  "common",
- "js-sys",
- "wasm-bindgen",
- "wasm-bindgen-futures",
 ]
 
 [[package]]

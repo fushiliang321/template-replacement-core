@@ -32,11 +32,12 @@ console_error_panic_hook = "0.1.7"
 [lib]
 name = "common"
 path = "src/lib.rs"
-crate-type = ["rlib"]
+crate-type = ["rlib", "dylib"]
 
 [features]
 _deflate-any = ["deflate-flate2"]
 deflate-flate2 = ["flate2/any_impl", "flate2/rust_backend", "_deflate-any"]
+param-sign = []
 
 [profile.release]
 opt-level = 3  # 最大化性能

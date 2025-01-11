@@ -222,7 +222,6 @@ pub mod common {
         }
     }
 
-
     //文件替换，需要提前添加文件
     #[wasm_bindgen]
     #[cfg(not(feature = "param-sign"))]
@@ -232,7 +231,6 @@ pub mod common {
         let variables = params_data.get_variables(&medias);
         replace_execute(variables, files).await
     }
-
 
     //批量文件替换
     #[wasm_bindgen]
@@ -272,6 +270,7 @@ pub mod common {
 
     //批量替换并验证参数
     #[wasm_bindgen]
+    #[cfg(feature = "param-sign")]
     pub async fn replace_batch_verify(verify_code: String, params_data: String) -> Vec<Uint8Array> {
         if !verify(&verify_code, &params_data) {
             return vec![];
@@ -284,9 +283,9 @@ pub mod common {
         replace_execute(variables, files).await
     }
 
-
     //编码替换参数
     #[wasm_bindgen]
+    #[cfg(feature = "param-sign")]
     pub async fn replace_params_encode(params: JsValue) -> JsValue {
         let params_data: ReplaceParams = from_value(params).unwrap();
         let encoded = crate::authorization::verify::encode(&params_data);
@@ -296,7 +295,6 @@ pub mod common {
             data: BASE64_STANDARD.encode(encoded),
         }).unwrap()
     }
-
 
     #[wasm_bindgen]
     pub async fn add_word(file: Uint8Array) -> u32 {
@@ -318,7 +316,6 @@ pub mod common {
     }
 }
 
-
 async fn add(file: Vec<u8>, _type: u8) -> u32 {
     let file = file.to_vec();
     let mut index = INDEX.lock().unwrap();
@@ -332,7 +329,6 @@ async fn add(file: Vec<u8>, _type: u8) -> u32 {
     }
 }
 
-pub fn test() {}
 #[wasm_bindgen(start)]
 pub fn main() {
     // 初始化代码

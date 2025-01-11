@@ -1,10 +1,10 @@
 [package]
-name = "template-replacement-sign-core-wasm"
-version = "0.1.0"
+name = "template-replacement-core-wasm"
+version = "0.1.1"
 edition = "2021"
 
 [dependencies]
-common = { path = "../common", features = ["param-sign"] }
+common = { path = "../common" }
 
 [lib]
 path = "src/lib.rs"

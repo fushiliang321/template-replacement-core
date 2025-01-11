@@ -32,7 +32,7 @@ console_error_panic_hook = "0.1.7"
 [lib]
 name = "common"
 path = "src/lib.rs"
-crate-type = ["rlib", "dylib"]
+crate-type = ["cdylib"]
 
 [features]
 _deflate-any = ["deflate-flate2"]

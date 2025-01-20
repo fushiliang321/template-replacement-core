@@ -4,6 +4,9 @@ use regex::Regex;
 pub static TEMP_FIELD_REG_EXP: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"\$((<[^<>{}$]*?>)|\s)*\{([^{}$]+)}").unwrap()
 });
+pub static TEMP_EXCLUDE_REG_EXP: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)<(/|)w:(p|drawing|tc|tbl)>").unwrap()
+});
 pub static OUT_TAG_REG_EXP: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"<.*?>|\s+").unwrap()
 });
@@ -16,8 +19,8 @@ pub fn raw_variables(content: &str) -> Vec<&str> {
     }
 
     for capture in TEMP_FIELD_REG_EXP.captures_iter(content) {
-        let str = capture.get(0).map_or("", |m| m.as_str());
-        if !str.is_empty() {
+        let str = capture.get(0).unwrap().as_str();
+        if !TEMP_EXCLUDE_REG_EXP.is_match(str) {
             result.push(str);
         }
     }

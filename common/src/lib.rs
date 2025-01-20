@@ -1,12 +1,10 @@
 #[macro_use]
 extern crate console_log;
-mod extract;
+pub mod extract;
 pub mod office;
-mod replace;
+pub mod replace;
 mod authorization;
-use crate::office::excel::new as new_excel;
-use crate::office::word::new as new_word;
-use crate::office::zip::Zip;
+use crate::office::zip::{new as new_zip, Zip};
 use crate::replace::data::{encode, Data, Value};
 use crate::replace::image::{generate_id, TextWrapType};
 use crate::replace::image::{new as new_image, Extent};
@@ -36,6 +34,12 @@ struct Media {
     suffix: String,
     text_wrap: TextWrapType,
     wp_extent: WpExtent,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ExtractMedia {
+    id: String,
+    data: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -118,14 +122,10 @@ lazy_static! {
     static ref MEDIA_FILES: Mutex<HashMap<String, Vec<u8>>> = Mutex::new(Default::default());
 }
 
-const TYPE_WORD: u8 = 0;
-const TYPE_EXCEL: u8 = 1;
-
-async fn new_office(file: Vec<u8>, _type: u8) -> Result<Zip, Error> {
-    match _type {
-        TYPE_WORD => new_word(file).await,
-        TYPE_EXCEL => new_excel(file).await,
-        _ => Err(Error::new(ErrorKind::Other, "文件类型错误")),
+async fn new_office(file: Vec<u8>) -> Result<Zip, Error> {
+    match new_zip(file).await {
+        Ok(zip) => Ok(zip),
+        Err(err) => Err(Error::new(ErrorKind::Other, "")),
     }
 }
 
@@ -189,14 +189,17 @@ async fn replace_execute(variables: Data, files: Vec<Zip>) -> Vec<Uint8Array> {
 
 pub mod common {
     use crate::authorization::verify::{decode, verify};
+    use crate::extract::index::{out_tag, raw_variables};
+    use crate::office::zip::new as new_zip;
     use crate::replace::image::generate_id;
     use crate::replace::index::Replace;
-    use crate::{add, new_office, replace_execute, AddReplaceParamsResult, ReplaceParams, Variables, MEDIA_FILES, TYPE_EXCEL, TYPE_WORD, VERSION};
+    use crate::{new_office, replace_execute, AddReplaceParamsResult, ExtractMedia, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES, VERSION};
     use base64::prelude::BASE64_STANDARD;
     use base64::Engine;
     use futures::future::join_all;
     use js_sys::Uint8Array;
     use serde_wasm_bindgen::from_value;
+    use std::collections::{HashMap, HashSet};
     use wasm_bindgen::prelude::wasm_bindgen;
     use wasm_bindgen::JsValue;
 
@@ -210,7 +213,7 @@ pub mod common {
     ) -> Uint8Array {
         let variables: Variables = from_value(variables).unwrap();
         let file = file.to_vec();
-        match crate::office::word::new(file).await {
+        match new_zip(file).await {
             Ok(office) => {
                 let mut execute_results = Replace::new(vec![office], variables.to_data(&medias))
                     .execute()
@@ -238,41 +241,47 @@ pub mod common {
     pub async fn replace_batch(
         params: JsValue,
         medias: Vec<Uint8Array>,    //媒体文件
-        mut files: Vec<Uint8Array>, //模板文件
-        split_size: usize,          //分割大小
+        files: Vec<Uint8Array>, //模板文件
     ) -> Vec<Uint8Array> {
         let variables: Variables = from_value(params).unwrap();
         let mut tasks = vec![];
-        let excel_size = files.len() - split_size; //excel文件数量
 
-        //添加excel文件
-        for _ in 0..excel_size {
-            if let Some(file) = files.pop() {
-                tasks.push(new_office(file.to_vec(), TYPE_EXCEL));
-            }
-        }
-
-        //添加word文件
-        while let Some(file) = files.pop() {
-            tasks.push(new_office(file.to_vec(), TYPE_WORD));
-        }
-
+        files.iter().for_each(|file| {
+            tasks.push(new_office(file.to_vec()));
+        });
         let mut res = join_all(tasks).await;
+
         let mut files = vec![];
+        let mut nullIndex = vec![]; //记录空值的索引
+        let mut index: usize = 0;
         while let Some(zip) = res.pop() {
             if let Ok(zip) = zip {
                 files.push(zip);
+            } else {
+                nullIndex.push(index);
+            }
+            index = index + 1;
+        }
+        let mut res = replace_execute(variables.to_data(&medias), files).await;
+
+        if !nullIndex.is_empty() {
+            for index in nullIndex.iter() {
+                if *index < res.iter().len() {
+                    res.insert(*index, Uint8Array::new(&Default::default()));
+                } else {
+                    res.push(Uint8Array::new(&Default::default()));
+                }
             }
         }
-
-        replace_execute(variables.to_data(&medias), files).await
+        res.reverse();
+        res
     }
 
     //批量替换并验证参数
     #[wasm_bindgen]
     #[cfg(feature = "param-sign")]
     pub async fn replace_batch_verify(verify_code: String, params_data: String) -> Vec<Uint8Array> {
-        if !verify(&verify_code, &params_data) {
+        if !verify(&verify_code, &format!("data={}&version={}", params_data, VERSION)) {
             return vec![];
         }
 
@@ -297,13 +306,16 @@ pub mod common {
     }
 
     #[wasm_bindgen]
-    pub async fn add_word(file: Uint8Array) -> u32 {
-        add(file.to_vec(), TYPE_WORD).await
-    }
-
-    #[wasm_bindgen]
-    pub async fn add_excel(file: Uint8Array) -> u32 {
-        add(file.to_vec(), TYPE_EXCEL).await
+    pub async fn add_template(file: Uint8Array) -> u32 {
+        if let Ok(office) = new_office(file.to_vec()).await {
+            let mut index = INDEX.lock().unwrap();
+            let mut files = FILES.lock().unwrap();
+            *index += 1;
+            files.insert(*index, office);
+            *index
+        } else {
+            0
+        }
     }
 
     #[wasm_bindgen]
@@ -314,19 +326,85 @@ pub mod common {
         media_files.insert(id.clone(), file);
         id
     }
+
+    #[wasm_bindgen]
+    pub async fn extract_one_file_variable_names(data: &Uint8Array) -> Vec<String> {
+        if let Ok(office) = new_office(data.to_vec()).await {
+            if let Some(vec) = office.extract_variable_names().await {
+                return vec;
+            }
+        }
+        vec![]
+    }
+
+    #[wasm_bindgen]
+    pub async fn extract_variable_names(files: Vec<Uint8Array>) -> Vec<String> {
+        let mut tasks = vec![];
+        files.iter().for_each(|file| {
+            tasks.push(extract_one_file_variable_names(file))
+        });
+
+        let res = join_all(tasks).await;
+
+        res.into_iter()
+            .flatten()
+            .fold((Vec::new(), HashSet::new()), |(mut acc, mut set), x| {
+                if set.insert(x.clone()) {
+                    acc.push(x);
+                }
+                (acc, set)
+            }).0
+    }
+
+    #[wasm_bindgen]
+    pub async fn extract_one_file_medias(data: Uint8Array) -> JsValue {
+        let mut map = _extract_one_file_medias(data.to_vec()).await;
+        let mut list = vec![];
+        for (k, v) in map {
+            list.push(ExtractMedia {
+                id: k,
+                data: v,
+            });
+        }
+        serde_wasm_bindgen::to_value(&list).unwrap()
+    }
+
+    #[wasm_bindgen]
+    pub async fn extract_medias(files: Vec<Uint8Array>) -> JsValue {
+        let mut tasks = vec![];
+        files.iter().for_each(|file| {
+            tasks.push(_extract_one_file_medias(file.to_vec()))
+        });
+
+        let mut res = join_all(tasks).await;
+        let mut map = HashMap::new();
+        res.iter().for_each(|x| {
+            x.iter().for_each(|(k, v)| {
+                map.insert(k.clone(), v.clone());
+            });
+        });
+
+        let mut list = vec![];
+        for (k, v) in map {
+            list.push(ExtractMedia {
+                id: k,
+                data: v,
+            });
+        }
+        serde_wasm_bindgen::to_value(&list).unwrap()
+    }
 }
 
-async fn add(file: Vec<u8>, _type: u8) -> u32 {
-    let file = file.to_vec();
-    let mut index = INDEX.lock().unwrap();
-    let mut files = FILES.lock().unwrap();
-    if let Ok(office) = new_office(file, _type).await {
-        *index += 1;
-        files.insert(*index, office);
-        *index
-    } else {
-        0
+async fn _extract_one_file_medias(data: Vec<u8>) -> HashMap<String, Vec<u8>> {
+    let mut map = HashMap::new();
+    if let Ok(office) = new_office(data).await {
+        if let Some(mediaMap) = office.get_medias().await {
+            mediaMap.iter().for_each(|(k, (name, data))| {
+                map.insert(k.clone(), data.to_vec());
+            });
+        }
     }
+    map
 }
 
 #[wasm_bindgen(start)]

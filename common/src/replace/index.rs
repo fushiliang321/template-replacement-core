@@ -1,4 +1,4 @@
-use crate::extract::index::{out_tag, raw_variables, OUT_TAG_REG_EXP, TEMP_FIELD_REG_EXP};
+use crate::extract::index::{out_tag, raw_variables, TEMP_EXCLUDE_REG_EXP, TEMP_FIELD_REG_EXP};
 use crate::office::zip::{RelationshipInfo, Zip};
 use crate::replace::data::Value::{Image, Text};
 use crate::replace::data::{Data, Value};
@@ -44,24 +44,22 @@ fn replace_content(
     let mut is_change = false;
     let content = TEMP_FIELD_REG_EXP
         .replace_all(input, |caps: &regex::Captures| {
-            if let Some(matched_str) = caps.get(0) {
-                let key = OUT_TAG_REG_EXP
-                    .replace_all(matched_str.into(), "")
-                    .as_ref()
-                    .to_string();
-                if let Some(value) = replacements.get(&key.clone()) {
-                    is_change = true;
-                    return match value {
-                        Text(value) => value.to_string(),
-                        Image(value) => {
-                            medias.insert(value.id.clone(), Box::new(value.clone()));
-                            value.to_string()
-                        }
-                    };
-                }
+            let str = caps.get(0).unwrap().as_str();
+            if TEMP_EXCLUDE_REG_EXP.is_match(str) {
+                return str.to_string();
             }
-            caps.get(0)
-                .map_or_else(|| "".to_string(), |m| m.as_str().to_string())
+            let key = out_tag(str);
+            if let Some(value) = replacements.get(&key) {
+                is_change = true;
+                return match value {
+                    Text(value) => value.to_string(),
+                    Image(value) => {
+                        medias.insert(value.id.clone(), Box::new(value.clone()));
+                        value.to_string()
+                    }
+                };
+            }
+            str.to_string()
         })
         .as_bytes()
         .to_vec()
@@ -111,10 +109,11 @@ pub async fn replace(office: &mut Zip, data: &Data) -> Box<[u8]> {
                         let mut relationships = vec![];
                         let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
                         for (key, file) in replace_content_result.medias {
-                            office.write_media(key.clone(), file.file);
+                            let name = format!("{}media/{}", office.office().root_dir(), &*key);
+                            office.write_media(name, file.file);
                             relationships.push(RelationshipInfo {
                                 id: key.clone(),
-                                target: key.clone(),
+                                target: key,
                                 _type: String::from(file.relationship),
                             });
                         }

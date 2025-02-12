@@ -78,12 +78,11 @@ async fn replace() {
     // let mut list = read_dir("D:\\其他\\A 人权生成模板2022简").await;
 
     let mut execute_results = Replace::new(list.data, variables).execute().await;
+    println!("{:?}", start.elapsed());
     while let Some(result) = execute_results.pop() {
         let name = list.names.pop().unwrap();
         fs::write("./out/".to_owned() + &*name, result);
     }
-
-    println!("{:?}", start.elapsed());
 }
 
 #[async_std::test]

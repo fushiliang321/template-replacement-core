@@ -26,7 +26,7 @@ fn extract_variables(content: &str) -> HashMap<&str, String> {
     }
     for raw_var in raw_vars {
         let var_name = out_tag(raw_var);
-        variables.insert(raw_var, var_name);
+        variables.insert(raw_var, var_name.to_string());
     }
     variables
 }
@@ -79,7 +79,7 @@ pub async fn replace_lock(office_mutex: Arc<Mutex<Zip>>, data: Arc<Data>) -> Box
                 //提取出原始变量
                 if let Ok(content) = from_utf8(file_data) {
                     if let Some(replace_content_result) = replace_content(content, text) {
-                        office.write_file(file_name.clone(), replace_content_result.content);
+                        office.write_file(file_name, replace_content_result.content);
                     }
                 }
             }
@@ -102,7 +102,7 @@ pub async fn replace(office: &mut Zip, data: &Data) -> Box<[u8]> {
                 //提取出原始变量
                 if let Ok(content) = from_utf8(file_data) {
                     if let Some(replace_content_result) = replace_content(content, text) {
-                        office.write_file(file_name.clone(), replace_content_result.content);
+                        office.write_file(&file_name.to_string(), replace_content_result.content);
                         if replace_content_result.medias.is_empty() {
                             continue;
                         }

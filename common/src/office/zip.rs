@@ -173,8 +173,8 @@ impl Zip {
     }
 
     //写入文件
-    pub fn write_file(&mut self, file_name: String, file_data: Box<[u8]>) {
-        self.files.insert(file_name, file_data);
+    pub fn write_file(&mut self, file_name: &String, file_data: Box<[u8]>) {
+        self.files.insert(file_name.clone(), file_data);
     }
 
     //获取关联文件内容

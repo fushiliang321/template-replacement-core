@@ -4,6 +4,9 @@ pub mod extract;
 pub mod office;
 pub mod replace;
 mod authorization;
+pub mod encrypt;
+
+use crate::encrypt::encrypt::{decode as decryptDecode, encode as encryptEncode};
 use crate::office::zip::{new as new_zip, Zip};
 use crate::replace::data::{encode, Data, Value};
 use crate::replace::image::{generate_id, TextWrapType};
@@ -98,16 +101,18 @@ impl VariableValue {
     }
 }
 
+//替换参数
 #[derive(Serialize, Deserialize)]
 struct Variables {
-    text: HashMap<String, VariableValue>,
-    media: HashMap<String, VariableValue>,
+    text: HashMap<String, VariableValue>, //文本参数
+    media: HashMap<String, VariableValue>, //媒体参数
 }
 
+//替换参数
 #[derive(Serialize, Deserialize)]
 struct ReplaceParams {
-    files: Vec<u32>,
-    variables: Variables,
+    files: Vec<u32>, //文件数据
+    variables: Variables, //参数数据
 }
 
 #[derive(Serialize, Deserialize)]
@@ -193,7 +198,7 @@ pub mod common {
     use crate::office::zip::new as new_zip;
     use crate::replace::image::generate_id;
     use crate::replace::index::Replace;
-    use crate::{new_office, replace_execute, AddReplaceParamsResult, ExtractMedia, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES, VERSION};
+    use crate::{file_decode, file_encode, new_office, replace_execute, AddReplaceParamsResult, ExtractMedia, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES, VERSION};
     use base64::prelude::BASE64_STANDARD;
     use base64::Engine;
     use futures::future::join_all;
@@ -210,9 +215,13 @@ pub mod common {
         variables: JsValue,
         medias: Vec<Uint8Array>,
         file: Uint8Array,
+        is_decode: bool,
     ) -> Uint8Array {
         let variables: Variables = from_value(variables).unwrap();
-        let file = file.to_vec();
+        let mut file = file.to_vec();
+        if is_decode {
+            file = file_decode(file);
+        }
         match new_zip(file).await {
             Ok(office) => {
                 let mut execute_results = Replace::new(vec![office], variables.to_data(&medias))
@@ -242,12 +251,17 @@ pub mod common {
         params: JsValue,
         medias: Vec<Uint8Array>,    //媒体文件
         files: Vec<Uint8Array>, //模板文件
+        is_decode: bool,
     ) -> Vec<Uint8Array> {
         let variables: Variables = from_value(params).unwrap();
         let mut tasks = vec![];
 
         files.iter().for_each(|file| {
-            tasks.push(new_office(file.to_vec()));
+            let mut fileVec = file.to_vec();
+            if is_decode {
+                fileVec = file_decode(fileVec);
+            }
+            tasks.push(new_office(fileVec));
         });
         let mut res = join_all(tasks).await;
 
@@ -306,8 +320,12 @@ pub mod common {
     }
 
     #[wasm_bindgen]
-    pub async fn add_template(file: Uint8Array) -> u32 {
-        if let Ok(office) = new_office(file.to_vec()).await {
+    pub async fn add_template(file: Uint8Array, is_decode: bool) -> u32 {
+        let mut file = file.to_vec();
+        if is_decode {
+            file = file_decode(file);
+        }
+        if let Ok(office) = new_office(file).await {
             let mut index = INDEX.lock().unwrap();
             let mut files = FILES.lock().unwrap();
             *index += 1;
@@ -327,9 +345,14 @@ pub mod common {
         id
     }
 
+    //单个文件提取变量名
     #[wasm_bindgen]
-    pub async fn extract_one_file_variable_names(data: &Uint8Array) -> Vec<String> {
-        if let Ok(office) = new_office(data.to_vec()).await {
+    pub async fn extract_one_file_variable_names(data: &Uint8Array, is_decode: bool) -> Vec<String> {
+        let mut file = data.to_vec();
+        if is_decode {
+            file = file_decode(file);
+        }
+        if let Ok(office) = new_office(file).await {
             if let Some(vec) = office.extract_variable_names().await {
                 return vec;
             }
@@ -337,11 +360,12 @@ pub mod common {
         vec![]
     }
 
+    //多文件批量提取变量名
     #[wasm_bindgen]
-    pub async fn extract_variable_names(files: Vec<Uint8Array>) -> Vec<String> {
+    pub async fn extract_variable_names(files: Vec<Uint8Array>, is_decode: bool) -> Vec<String> {
         let mut tasks = vec![];
         files.iter().for_each(|file| {
-            tasks.push(extract_one_file_variable_names(file))
+            tasks.push(extract_one_file_variable_names(file, is_decode))
         });
 
         let res = join_all(tasks).await;
@@ -356,9 +380,14 @@ pub mod common {
             }).0
     }
 
+    //单个文件提取媒体文件
     #[wasm_bindgen]
-    pub async fn extract_one_file_medias(data: Uint8Array) -> JsValue {
-        let mut map = _extract_one_file_medias(data.to_vec()).await;
+    pub async fn extract_one_file_medias(data: &Uint8Array, is_decode: bool) -> JsValue {
+        let mut file = data.to_vec();
+        if is_decode {
+            file = file_decode(file);
+        }
+        let mut map = _extract_one_file_medias(file).await;
         let mut list = vec![];
         for (k, v) in map {
             list.push(ExtractMedia {
@@ -369,11 +398,16 @@ pub mod common {
         serde_wasm_bindgen::to_value(&list).unwrap()
     }
 
+    //多文件批量提取媒体文件
     #[wasm_bindgen]
-    pub async fn extract_medias(files: Vec<Uint8Array>) -> JsValue {
+    pub async fn extract_medias(files: Vec<Uint8Array>, is_decode: bool) -> JsValue {
         let mut tasks = vec![];
         files.iter().for_each(|file| {
-            tasks.push(_extract_one_file_medias(file.to_vec()))
+            let mut file = file.to_vec();
+            if is_decode {
+                file = file_decode(file);
+            }
+            tasks.push(_extract_one_file_medias(file))
         });
 
         let mut res = join_all(tasks).await;
@@ -393,6 +427,24 @@ pub mod common {
         }
         serde_wasm_bindgen::to_value(&list).unwrap()
     }
+
+    //文件加密
+    #[wasm_bindgen]
+    pub fn file_encrypt(file: Uint8Array) -> Uint8Array {
+        let data = file.to_vec();
+        Uint8Array::from(file_encode(data).as_slice())
+    }
+    //文件批量加密
+    #[wasm_bindgen]
+    pub fn files_encrypt(files: Vec<Uint8Array>) -> Vec<Uint8Array> {
+        let mut result = vec![];
+        files.iter().for_each(|file| {
+            let data = file.to_vec();
+            let uint8array = Uint8Array::from(file_encode(data).as_slice());
+            result.push(uint8array);
+        });
+        result
+    }
 }
 
 async fn _extract_one_file_medias(data: Vec<u8>) -> HashMap<String, Vec<u8>> {
@@ -405,6 +457,19 @@ async fn _extract_one_file_medias(data: Vec<u8>) -> HashMap<String, Vec<u8>> {
         }
     }
     map
+}
+
+pub fn file_encode(data: Vec<u8>) -> Vec<u8> {
+    let mut mut_data = data;
+    let input: &mut [u8] = mut_data.as_mut_slice();
+    encryptEncode(input);
+    input.to_vec()
+}
+pub fn file_decode(data: Vec<u8>) -> Vec<u8> {
+    let mut mut_data = data;
+    let input: &mut [u8] = mut_data.as_mut_slice();
+    decryptDecode(input);
+    input.to_vec()
 }
 
 #[wasm_bindgen(start)]

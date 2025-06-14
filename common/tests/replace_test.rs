@@ -3,6 +3,7 @@ use common::office::zip::{new as new_zip, Zip};
 use common::replace::data::Data;
 use common::replace::data::Value::Text;
 use common::replace::index::Replace;
+use common::{file_decode, file_encode};
 use futures::future::join_all;
 use std::collections::HashMap;
 use std::fs;
@@ -99,3 +100,48 @@ async fn extract_medias() {
         println!("{:?}", file.get_medias().await);
     }
 }
+
+#[async_std::test]
+async fn file_encode_test() {
+    let dirs = fs::read_dir("D:\\其他\\test").unwrap();
+
+    dirs.for_each(|dir| {
+        let path = dir.unwrap().path();
+        if path.is_dir() {
+            return;
+        }
+
+        let path = Path::new(&path);
+        if let Ok(data) = fs::read(path) {
+            let name = path.file_name()
+                .and_then(|name| name.to_str())
+                .map(|name| name).unwrap();
+
+            let res = file_encode(data);
+            fs::write("./out/en/".to_owned() + &*name, res).expect("TODO: panic message");
+        }
+    });
+}
+
+#[async_std::test]
+async fn file_decode_test() {
+    let dirs = fs::read_dir("./out/en/").unwrap();
+
+    dirs.for_each(|dir| {
+        let path = dir.unwrap().path();
+        if path.is_dir() {
+            return;
+        }
+
+        let path = Path::new(&path);
+        if let Ok(data) = fs::read(path) {
+            let name = path.file_name()
+                .and_then(|name| name.to_str())
+                .map(|name| name).unwrap();
+
+            let res = file_decode(data);
+            fs::write("./out/de/".to_owned() + &*name, res).expect("TODO: panic message");
+        }
+    });
+}
+

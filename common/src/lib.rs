@@ -141,7 +141,13 @@ async fn uint8array_to_replace_file(file: &Uint8Array, is_decode: bool) -> File 
     }
     match new_zip(data).await {
         Ok(zip) => File::Zip(zip),
-        Err(err) => File::Result(file.to_vec()),
+        Err(err) => {
+            let mut data = file.to_vec();
+            if is_decode {
+                data = file_decode(data);
+            }
+            File::Result(data)
+        }
     }
 }
 
@@ -232,11 +238,11 @@ pub mod common {
         is_decode: bool,
     ) -> Uint8Array {
         let variables: Variables = from_value(variables).unwrap();
-        let mut file = file.to_vec();
+        let mut data = file.to_vec();
         if is_decode {
-            file = file_decode(file);
+            data = file_decode(data);
         }
-        match new_zip(file).await {
+        match new_zip(data).await {
             Ok(office) => {
                 let mut execute_results = Replace::new(vec![File::Zip(office)], variables.to_data(&medias))
                     .execute()
@@ -244,7 +250,13 @@ pub mod common {
                 let res = execute_results.pop().unwrap();
                 Uint8Array::from(res.as_ref())
             }
-            Err(_) => Uint8Array::new(&Default::default()),
+            Err(_) => {
+                let mut data = file.to_vec();
+                if is_decode {
+                    data = file_decode(data);
+                }
+                Uint8Array::from(data.as_slice())
+            },
         }
     }
 

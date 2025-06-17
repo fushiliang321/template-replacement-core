@@ -15,10 +15,21 @@ const TYPE_WORD: u8 = 0;
 const TYPE_EXCEL: u8 = 1;
 
 
-async fn new_office(file: Vec<u8>, name: String) -> Result<(Zip, String), Error> {
+async fn new_office(file: Vec<u8>) -> Result<Zip, Error> {
     match new_zip(file).await {
-        Ok(zip) => Ok((zip, name)),
+        Ok(zip) => Ok(zip),
         Err(err) => Err(Error::new(ErrorKind::Other, "")),
+    }
+}
+
+async fn vec_to_file(file: Vec<u8>) -> File {
+    match new_office(file.clone()).await {
+        Ok(zip) => {
+            File::Zip(zip)
+        }
+        Err(..) => {
+            File::Result(file_decode(file))
+        }
     }
 }
 
@@ -31,6 +42,11 @@ async fn read_dir(path: &str) -> FileList {
     let dirs = fs::read_dir(path).unwrap();
 
     let mut tasks = vec![];
+    let mut list = FileList {
+        names: vec![],
+        data: vec![],
+    };
+
     dirs.for_each(|dir| {
         let path = dir.unwrap().path();
         if path.is_dir() {
@@ -42,25 +58,16 @@ async fn read_dir(path: &str) -> FileList {
             let name = path.file_name()
                 .and_then(|name| name.to_str())
                 .map(|name| name).unwrap();
-            tasks.push(new_office(data, name.to_string()));
+            println!("{}", name);
+            list.names.push(name.to_string());
+            tasks.push(vec_to_file(data));
         }
     });
 
-    let mut res = join_all(tasks).await;
-
-
-    let mut list = FileList {
-        names: vec![],
-        data: vec![],
-    };
-
-    while let Some(r) = res.pop() {
-        if let Ok((zip, name)) = r {
-            list.data.push(File::Zip(zip));
-            list.names.push(name);
-        }
-    }
-
+    let res = join_all(tasks).await;
+    res.into_iter().for_each(|file| {
+        list.data.push(file);
+    });
     list
 }
 

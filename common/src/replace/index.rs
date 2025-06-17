@@ -104,28 +104,30 @@ fn get_filename(path: &str) -> Option<&str> {
 pub async fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
     match file {
         File::Zip(office) => {
-            if let Some(files) = office.match_document_contents().await {
-                if let Some(text) = &data.text {
-                    for (file_name, file_data) in files.iter() {
-                        //提取出原始变量
-                        if let Ok(content) = from_utf8(file_data) {
-                            if let Some(replace_content_result) = replace_content(content, text) {
-                                office.write_file(&file_name.to_string(), replace_content_result.content);
-                                if replace_content_result.medias.is_empty() {
-                                    continue;
+            if let Some(text) = &data.text {
+                if !text.is_empty() {
+                    if let Some(files) = office.match_document_contents().await {
+                        for (file_name, file_data) in files.iter() {
+                            //提取出原始变量
+                            if let Ok(content) = from_utf8(file_data) {
+                                if let Some(replace_content_result) = replace_content(content, text) {
+                                    office.write_file(&file_name.to_string(), replace_content_result.content);
+                                    if replace_content_result.medias.is_empty() {
+                                        continue;
+                                    }
+                                    let mut relationships = vec![];
+                                    let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
+                                    for (key, file) in replace_content_result.medias {
+                                        let name = format!("{}media/{}", office.office().root_dir(), &*key);
+                                        office.write_media(name, file.file);
+                                        relationships.push(RelationshipInfo {
+                                            id: key.clone(),
+                                            target: key,
+                                            _type: String::from(file.relationship),
+                                        });
+                                    }
+                                    office.write_relationships(name, relationships);
                                 }
-                                let mut relationships = vec![];
-                                let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
-                                for (key, file) in replace_content_result.medias {
-                                    let name = format!("{}media/{}", office.office().root_dir(), &*key);
-                                    office.write_media(name, file.file);
-                                    relationships.push(RelationshipInfo {
-                                        id: key.clone(),
-                                        target: key,
-                                        _type: String::from(file.relationship),
-                                    });
-                                }
-                                office.write_relationships(name, relationships);
                             }
                         }
                     }
@@ -189,11 +191,7 @@ impl Replace {
     }
 
     pub async fn execute(&mut self) -> Vec<Box<[u8]>> {
-        if self.data.is_empty() {
-            return Vec::new();
-        }
         let mut tasks: Vec<_> = vec![];
-
         for file in self.files.iter_mut() {
             tasks.push(replace(file, &self.data));
         }

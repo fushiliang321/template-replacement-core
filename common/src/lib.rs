@@ -11,7 +11,7 @@ use crate::office::zip::{new as new_zip, Zip};
 use crate::replace::data::{encode, Data, Value};
 use crate::replace::image::{generate_id, TextWrapType};
 use crate::replace::image::{new as new_image, Extent};
-use crate::replace::index::Replace;
+use crate::replace::index::{File, Replace};
 use crate::VariableValue::Image;
 use crate::VariableValue::Text;
 use js_sys::Uint8Array;
@@ -122,8 +122,8 @@ struct AddReplaceParamsResult {
 }
 
 lazy_static! {
-    static ref INDEX: Mutex<u32> = Mutex::new(0);
-    static ref FILES: Mutex<HashMap<u32, Zip>> = Mutex::new(Default::default());
+    static ref INDEX: Mutex<u32> = Mutex::new(0); //随机的起始编号，防止验证码被重复使用
+    static ref FILES: Mutex<HashMap<u32, File>> = Mutex::new(Default::default());
     static ref MEDIA_FILES: Mutex<HashMap<String, Vec<u8>>> = Mutex::new(Default::default());
 }
 
@@ -131,6 +131,17 @@ async fn new_office(file: Vec<u8>) -> Result<Zip, Error> {
     match new_zip(file).await {
         Ok(zip) => Ok(zip),
         Err(err) => Err(Error::new(ErrorKind::Other, "")),
+    }
+}
+
+async fn uint8array_to_replace_file(file: &Uint8Array, is_decode: bool) -> File {
+    let mut data = file.to_vec();
+    if is_decode {
+        data = file_decode(data);
+    }
+    match new_zip(data).await {
+        Ok(zip) => File::Zip(zip),
+        Err(err) => File::Result(file.to_vec()),
     }
 }
 
@@ -165,12 +176,16 @@ impl Variables {
 }
 
 impl ReplaceParams {
-    async fn get_files(&self) -> Vec<Zip> {
-        let mut files: Vec<Zip> = Vec::new();
+    async fn get_files(&self) -> Vec<File> {
+        let mut files = Vec::new();
         let mut file_map = FILES.lock().unwrap();
+
         for (_, file_id) in self.files.iter().enumerate() {
             if let Some(file) = file_map.remove(file_id) {
                 files.push(file);
+            } else {
+                //如果没有获取到文件就创建一个空的结果数据
+                files.push(File::Result(Vec::new()))
             }
         }
         files
@@ -181,7 +196,7 @@ impl ReplaceParams {
     }
 }
 
-async fn replace_execute(variables: Data, files: Vec<Zip>) -> Vec<Uint8Array> {
+async fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Uint8Array> {
     let execute_results = Replace::new(files, variables).execute().await;
     let mut result = vec![];
     for execute_result in execute_results.iter() {
@@ -194,11 +209,10 @@ async fn replace_execute(variables: Data, files: Vec<Zip>) -> Vec<Uint8Array> {
 
 pub mod common {
     use crate::authorization::verify::{decode, verify};
-    use crate::extract::index::{out_tag, raw_variables};
     use crate::office::zip::new as new_zip;
     use crate::replace::image::generate_id;
     use crate::replace::index::Replace;
-    use crate::{file_decode, file_encode, new_office, replace_execute, AddReplaceParamsResult, ExtractMedia, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES, VERSION};
+    use crate::{file_decode, file_encode, new_office, replace_execute, uint8array_to_replace_file, AddReplaceParamsResult, ExtractMedia, File, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES, VERSION};
     use base64::prelude::BASE64_STANDARD;
     use base64::Engine;
     use futures::future::join_all;
@@ -224,7 +238,7 @@ pub mod common {
         }
         match new_zip(file).await {
             Ok(office) => {
-                let mut execute_results = Replace::new(vec![office], variables.to_data(&medias))
+                let mut execute_results = Replace::new(vec![File::Zip(office)], variables.to_data(&medias))
                     .execute()
                     .await;
                 let res = execute_results.pop().unwrap();
@@ -257,38 +271,11 @@ pub mod common {
         let mut tasks = vec![];
 
         files.iter().for_each(|file| {
-            let mut fileVec = file.to_vec();
-            if is_decode {
-                fileVec = file_decode(fileVec);
-            }
-            tasks.push(new_office(fileVec));
+            tasks.push(uint8array_to_replace_file(file, is_decode));
         });
-        let mut res = join_all(tasks).await;
+        let res = join_all(tasks).await;
 
-        let mut files = vec![];
-        let mut nullIndex = vec![]; //记录空值的索引
-        let mut index: usize = 0;
-        while let Some(zip) = res.pop() {
-            if let Ok(zip) = zip {
-                files.push(zip);
-            } else {
-                nullIndex.push(index);
-            }
-            index = index + 1;
-        }
-        let mut res = replace_execute(variables.to_data(&medias), files).await;
-
-        if !nullIndex.is_empty() {
-            for index in nullIndex.iter() {
-                if *index < res.iter().len() {
-                    res.insert(*index, Uint8Array::new(&Default::default()));
-                } else {
-                    res.push(Uint8Array::new(&Default::default()));
-                }
-            }
-        }
-        res.reverse();
-        res
+        replace_execute(variables.to_data(&medias), res).await
     }
 
     //批量替换并验证参数
@@ -320,20 +307,17 @@ pub mod common {
     }
 
     #[wasm_bindgen]
-    pub async fn add_template(file: Uint8Array, is_decode: bool) -> u32 {
-        let mut file = file.to_vec();
-        if is_decode {
-            file = file_decode(file);
+    pub async fn add_template(file_data: Uint8Array, is_decode: bool) -> u32 {
+        let file = uint8array_to_replace_file(&file_data, is_decode).await;
+        let mut index = INDEX.lock().unwrap();
+        let mut files = FILES.lock().unwrap();
+        let mut len = file_data.length();
+        if len > 0 {
+            len = len % 100;
         }
-        if let Ok(office) = new_office(file).await {
-            let mut index = INDEX.lock().unwrap();
-            let mut files = FILES.lock().unwrap();
-            *index += 1;
-            files.insert(*index, office);
-            *index
-        } else {
-            0
-        }
+        *index += len + 1;
+        files.insert(*index, file);
+        *index
     }
 
     #[wasm_bindgen]
@@ -387,7 +371,7 @@ pub mod common {
         if is_decode {
             file = file_decode(file);
         }
-        let mut map = _extract_one_file_medias(file).await;
+        let map = _extract_one_file_medias(file).await;
         let mut list = vec![];
         for (k, v) in map {
             list.push(ExtractMedia {
@@ -410,7 +394,7 @@ pub mod common {
             tasks.push(_extract_one_file_medias(file))
         });
 
-        let mut res = join_all(tasks).await;
+        let res = join_all(tasks).await;
         let mut map = HashMap::new();
         res.iter().for_each(|x| {
             x.iter().for_each(|(k, v)| {
@@ -450,8 +434,8 @@ pub mod common {
 async fn _extract_one_file_medias(data: Vec<u8>) -> HashMap<String, Vec<u8>> {
     let mut map = HashMap::new();
     if let Ok(office) = new_office(data).await {
-        if let Some(mediaMap) = office.get_medias().await {
-            mediaMap.iter().for_each(|(k, (name, data))| {
+        if let Some(media_map) = office.get_medias().await {
+            media_map.iter().for_each(|(k, (_, data))| {
                 map.insert(k.clone(), data.to_vec());
             });
         }

@@ -1,12 +1,12 @@
-use crate::office::zip::Zip;
 use crate::replace::data::Data;
+use crate::replace::index::File;
 use crossbeam_channel::unbounded;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 struct MsgData {
-    office: Arc<Mutex<Zip>>,
+    office: Arc<Mutex<File>>,
     id: u64,
 }
 
@@ -72,7 +72,7 @@ impl Thread {
         }
     }
 
-    pub fn add(&mut self, office: Arc<Mutex<Zip>>) -> u64 {
+    pub fn add(&mut self, office: Arc<Mutex<File>>) -> u64 {
         let id = self.index;
         self.index += 1;
         let msg = MsgData { office, id };

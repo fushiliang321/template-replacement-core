@@ -2,9 +2,10 @@ use async_std::path::Path;
 use common::office::zip::{new as new_zip, Zip};
 use common::replace::data::Data;
 use common::replace::data::Value::Text;
-use common::replace::index::Replace;
+use common::replace::index::{File, Replace};
 use common::{file_decode, file_encode};
 use futures::future::join_all;
+use futures::FutureExt;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Error, ErrorKind};
@@ -23,7 +24,7 @@ async fn new_office(file: Vec<u8>, name: String) -> Result<(Zip, String), Error>
 
 struct FileList {
     names: Vec<String>,
-    data: Vec<Zip>,
+    data: Vec<File>,
 }
 
 async fn read_dir(path: &str) -> FileList {
@@ -55,7 +56,7 @@ async fn read_dir(path: &str) -> FileList {
 
     while let Some(r) = res.pop() {
         if let Ok((zip, name)) = r {
-            list.data.push(zip);
+            list.data.push(File::Zip(zip));
             list.names.push(name);
         }
     }
@@ -90,14 +91,24 @@ async fn replace() {
 async fn extract() {
     let mut list = read_dir("D:\\其他\\test").await;
     if let Some(file) = list.data.pop() {
-        println!("{:?}", file.extract_variable_names().await);
+        match file {
+            File::Zip(zip) => {
+                println!("{:?}", zip.extract_variable_names().await);
+            }
+            _ => {}
+        }
     }
 }
 #[async_std::test]
 async fn extract_medias() {
     let mut list = read_dir("D:\\其他\\test").await;
     if let Some(file) = list.data.pop() {
-        println!("{:?}", file.get_medias().await);
+        match file {
+            File::Zip(zip) => {
+                println!("{:?}", zip.get_medias().await);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -140,6 +151,23 @@ async fn file_decode_test() {
                 .map(|name| name).unwrap();
 
             let res = file_decode(data);
+
+
+            // let runtime = tokio::runtime::Builder::new_current_thread()
+            //     .worker_threads(4) // 设置工作线程数（可选）
+            //     .enable_all()       // 启用所有功能（I/O、时间等）
+            //     .build()
+            //     .unwrap();
+            // 
+            // runtime.block_on(async {
+            //     if let Ok(office) = new_office(res.clone(), name.parse().unwrap()).await {
+            //         println!("{},ok", name)
+            //     } else {
+            //         println!("{},error", name)
+            //     }
+            // });
+
+
             fs::write("./out/de/".to_owned() + &*name, res).expect("TODO: panic message");
         }
     });

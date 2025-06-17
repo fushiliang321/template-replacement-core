@@ -8,8 +8,14 @@ use std::collections::{HashMap, VecDeque};
 use std::str::from_utf8;
 use std::sync::{Arc, Mutex};
 
+
+pub enum File {
+    Zip(Zip),
+    Result(Vec<u8>),
+}
+
 pub struct Replace {
-    files: VecDeque<Zip>,
+    files: VecDeque<File>,
     data: Arc<Data>,
 }
 
@@ -95,59 +101,66 @@ fn get_filename(path: &str) -> Option<&str> {
     }
 }
 
-pub async fn replace(office: &mut Zip, data: &Data) -> Box<[u8]> {
-    if let Some(files) = office.match_document_contents().await {
-        if let Some(text) = &data.text {
-            for (file_name, file_data) in files.iter() {
-                //提取出原始变量
-                if let Ok(content) = from_utf8(file_data) {
-                    if let Some(replace_content_result) = replace_content(content, text) {
-                        office.write_file(&file_name.to_string(), replace_content_result.content);
-                        if replace_content_result.medias.is_empty() {
-                            continue;
+pub async fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
+    match file {
+        File::Zip(office) => {
+            if let Some(files) = office.match_document_contents().await {
+                if let Some(text) = &data.text {
+                    for (file_name, file_data) in files.iter() {
+                        //提取出原始变量
+                        if let Ok(content) = from_utf8(file_data) {
+                            if let Some(replace_content_result) = replace_content(content, text) {
+                                office.write_file(&file_name.to_string(), replace_content_result.content);
+                                if replace_content_result.medias.is_empty() {
+                                    continue;
+                                }
+                                let mut relationships = vec![];
+                                let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
+                                for (key, file) in replace_content_result.medias {
+                                    let name = format!("{}media/{}", office.office().root_dir(), &*key);
+                                    office.write_media(name, file.file);
+                                    relationships.push(RelationshipInfo {
+                                        id: key.clone(),
+                                        target: key,
+                                        _type: String::from(file.relationship),
+                                    });
+                                }
+                                office.write_relationships(name, relationships);
+                            }
                         }
-                        let mut relationships = vec![];
-                        let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
-                        for (key, file) in replace_content_result.medias {
-                            let name = format!("{}media/{}", office.office().root_dir(), &*key);
-                            office.write_media(name, file.file);
-                            relationships.push(RelationshipInfo {
-                                id: key.clone(),
-                                target: key,
-                                _type: String::from(file.relationship),
-                            });
-                        }
-                        office.write_relationships(name, relationships);
                     }
                 }
             }
-        }
-    }
 
-    if let Some(medias) = &data.media {
-        if !medias.is_empty() {
-            if let Some(office_medias) = office.get_media_names().await {
-                if !office_medias.is_empty() {
-                    for (key, name) in office_medias.iter() {
-                        if let Some(file) = medias.get(key) {
-                            match file {
-                                Text(_) => {}
-                                Image(file) => {
-                                    office.write_media(name.clone(), file.file.clone());
+            if let Some(medias) = &data.media {
+                if !medias.is_empty() {
+                    if let Some(office_medias) = office.get_media_names().await {
+                        if !office_medias.is_empty() {
+                            for (key, name) in office_medias.iter() {
+                                if let Some(file) = medias.get(key) {
+                                    match file {
+                                        Text(_) => {}
+                                        Image(file) => {
+                                            office.write_media(name.clone(), file.file.clone());
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+
+            office.finish().await
+        }
+        File::Result(file) => {
+            Box::from(file.clone())
         }
     }
-
-    office.finish().await
 }
 
 impl Replace {
-    pub fn new(files: Vec<Zip>, data: Data) -> Replace {
+    pub fn new(files: Vec<File>, data: Data) -> Replace {
         Replace {
             files: VecDeque::from(files),
             data: Arc::new(data),
@@ -171,14 +184,18 @@ impl Replace {
         thread.over(ids)
     }
 
+    async fn vec_to_box(v: &mut Vec<u8>) -> Box<[u8]> {
+        Box::from(v.clone())
+    }
+
     pub async fn execute(&mut self) -> Vec<Box<[u8]>> {
         if self.data.is_empty() {
             return Vec::new();
         }
-        let mut tasks = vec![];
+        let mut tasks: Vec<_> = vec![];
 
-        for office in self.files.iter_mut() {
-            tasks.push(replace(office, &self.data));
+        for file in self.files.iter_mut() {
+            tasks.push(replace(file, &self.data));
         }
         join_all(tasks).await
     }

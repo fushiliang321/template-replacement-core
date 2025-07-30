@@ -16,11 +16,22 @@ use crate::VariableValue::Image;
 use crate::VariableValue::Text;
 use js_sys::Uint8Array;
 use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
+
+
+static VERSION: OnceCell<String> = OnceCell::new();
+
+pub(crate) fn version() -> &'static String {
+    VERSION.get_or_init(|| {
+        "1.0.0".to_string()
+    })
+}
+
 
 #[derive(Serialize, Deserialize)]
 struct WpExtent {
@@ -212,11 +223,11 @@ async fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Uint8Array> {
 }
 
 pub mod common {
-    use crate::authorization::verify::{decode, verify, VERSION};
+    use crate::authorization::verify::{decode, verify};
     use crate::office::zip::new as new_zip;
     use crate::replace::image::generate_id;
     use crate::replace::index::Replace;
-    use crate::{file_decode, file_encode, new_office, replace_execute, uint8array_to_replace_file, AddReplaceParamsResult, ExtractMedia, File, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES};
+    use crate::{file_decode, file_encode, new_office, replace_execute, uint8array_to_replace_file, version, AddReplaceParamsResult, ExtractMedia, File, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES};
     use base64::prelude::BASE64_STANDARD;
     use base64::Engine;
     use futures::future::join_all;
@@ -311,7 +322,7 @@ pub mod common {
         let encoded = crate::authorization::verify::encode(&params_data);
 
         serde_wasm_bindgen::to_value(&AddReplaceParamsResult {
-            version: VERSION.to_string(),
+            version: version().to_string(),
             data: BASE64_STANDARD.encode(encoded),
         }).unwrap()
     }

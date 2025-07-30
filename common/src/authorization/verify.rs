@@ -1,14 +1,32 @@
+use crate::version;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use flate2::Crc;
+use once_cell::sync::OnceCell;
 use rmp_serde::decode::Error;
 use serde::{Deserialize, Serialize};
 
-pub const VERSION: &str = "1.0.0";
+static SALT: OnceCell<String> = OnceCell::new();
 
-//md5("zct 1.0.0")
-const SALT: &str = "351100ce837185309180455d7a54855d";
+// 需要返回盐值："351100ce837185309180455d7a54855d"
+// 盐生成方式：md5("zct 1.0.0")
+fn salt() -> &'static String {
+    SALT.get_or_init(|| {
+        // 为防止生成的wasm暴露盐值，需要对盐值做一下混淆处理
+        let str1 = "35";
+        // base64("1100ce837185")
+        let str2 = String::from_utf8(BASE64_STANDARD.decode("MTEwMGNlODM3MTg1").unwrap()).unwrap();
+        let str3 = "309";
+        // base64("309180455d7a54855d")
+        let str4 = String::from_utf8(BASE64_STANDARD.decode("MTgwNDU1ZDdhNTQ4NTVk").unwrap()).unwrap();
+        str1.to_owned() + &*str2 + &*str3+ &*str4
+    })
+}
 
 pub fn verify(code: &String, data: &String) -> bool {
-    let str = format!("data={}&version={}&{}&{}", data, VERSION, SALT, VERSION);
+    let version = version();
+    let salt = salt();
+    let str = format!("{}={}&{}={}&{}&{}","data".to_string(), data,"version".to_string(), version, salt, version);
     let mut crc = Crc::new();
     crc.update(str.as_bytes());
     code.eq(&crc.sum().to_string())

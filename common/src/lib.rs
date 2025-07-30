@@ -22,8 +22,6 @@ use std::io::{Error, ErrorKind};
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
-pub const VERSION: &str = "1.0.0";
-
 #[derive(Serialize, Deserialize)]
 struct WpExtent {
     cy: f32,
@@ -214,11 +212,9 @@ async fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Uint8Array> {
 }
 
 pub mod common {
-    use crate::authorization::verify::{decode, verify};
-    use crate::office::zip::new as new_zip;
+    use crate::authorization::verify::{decode, verify, VERSION};
     use crate::replace::image::generate_id;
-    use crate::replace::index::Replace;
-    use crate::{file_decode, file_encode, new_office, replace_execute, uint8array_to_replace_file, AddReplaceParamsResult, ExtractMedia, File, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES, VERSION};
+    use crate::{file_decode, file_encode, new_office, replace_execute, uint8array_to_replace_file, AddReplaceParamsResult, ExtractMedia, File, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES};
     use base64::prelude::BASE64_STANDARD;
     use base64::Engine;
     use futures::future::join_all;
@@ -256,7 +252,7 @@ pub mod common {
                     data = file_decode(data);
                 }
                 Uint8Array::from(data.as_slice())
-            },
+            }
         }
     }
 
@@ -294,7 +290,7 @@ pub mod common {
     #[wasm_bindgen]
     #[cfg(feature = "param-sign")]
     pub async fn replace_batch_verify(verify_code: String, params_data: String) -> Vec<Uint8Array> {
-        if !verify(&verify_code, &format!("data={}&version={}", params_data, VERSION)) {
+        if !verify(&verify_code, &params_data) {
             return vec![];
         }
 

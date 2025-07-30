@@ -213,7 +213,9 @@ async fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Uint8Array> {
 
 pub mod common {
     use crate::authorization::verify::{decode, verify, VERSION};
+    use crate::office::zip::new as new_zip;
     use crate::replace::image::generate_id;
+    use crate::replace::index::Replace;
     use crate::{file_decode, file_encode, new_office, replace_execute, uint8array_to_replace_file, AddReplaceParamsResult, ExtractMedia, File, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES};
     use base64::prelude::BASE64_STANDARD;
     use base64::Engine;

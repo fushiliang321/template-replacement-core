@@ -1,5 +1,4 @@
 use flate2::Crc;
-use md5::Digest;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]

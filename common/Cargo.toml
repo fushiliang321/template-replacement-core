@@ -48,3 +48,4 @@ opt-level = 3  # 最大化性能
 lto = true       # 启用链接时优化
 codegen-units = 1
 panic = 'abort'  # 出现 panic 时直接终止程序
+debug = false

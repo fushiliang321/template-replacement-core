@@ -41,7 +41,7 @@ fn office(archive: &mut ZipArchive<Cursor<Vec<u8>>>) -> Option<Box<dyn Office>> 
 
 pub enum Error {
     ReadFailure(String), // 读取失败
-    NotSupported, // 不支持的文件类型
+    NotSupported(Vec<u8>), // 不支持的文件类型
 }
 
 pub async fn new(file: Vec<u8>) -> Result<Zip, Error> {
@@ -63,7 +63,7 @@ pub async fn new(file: Vec<u8>) -> Result<Zip, Error> {
             };
         }
     }
-    Err(NotSupported)
+    Err(NotSupported(file))
 }
 
 impl Zip {

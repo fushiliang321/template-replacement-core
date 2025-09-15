@@ -7,7 +7,7 @@ mod authorization;
 pub mod encrypt;
 
 use crate::encrypt::encrypt::{decode as decryptDecode, encode as encryptEncode};
-use crate::office::zip::{new as new_zip, Zip};
+use crate::office::zip::{new as new_zip, Error as ZipError, Zip};
 use crate::replace::data::{encode, Data, Value};
 use crate::replace::image::{generate_id, TextWrapType};
 use crate::replace::image::{new as new_image, Extent};
@@ -150,12 +150,17 @@ async fn uint8array_to_replace_file(file: &Uint8Array, is_decode: bool) -> File 
     }
     match new_zip(data).await {
         Ok(zip) => File::Zip(zip),
-        Err(err) => {
-            let mut data = file.to_vec();
-            if is_decode {
-                data = file_decode(data);
+        Err(err) => match err {
+            ZipError::NotSupported(data) => {
+                File::Result(data)
             }
-            File::Result(data)
+            _ => {
+                let mut data = file.to_vec();
+                if is_decode {
+                    data = file_decode(data);
+                }
+                File::Result(data)
+            }
         }
     }
 }
@@ -225,6 +230,7 @@ async fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Uint8Array> {
 pub mod common {
     use crate::authorization::verify::{decode, verify};
     use crate::office::zip::new as new_zip;
+    use crate::office::zip::Error::NotSupported;
     use crate::replace::image::generate_id;
     use crate::replace::index::Replace;
     use crate::{file_decode, file_encode, new_office, replace_execute, uint8array_to_replace_file, version, AddReplaceParamsResult, ExtractMedia, File, ReplaceParams, Variables, _extract_one_file_medias, FILES, INDEX, MEDIA_FILES};
@@ -259,12 +265,19 @@ pub mod common {
                 let res = execute_results.pop().unwrap();
                 Uint8Array::from(res.as_ref())
             }
-            Err(_) => {
-                let mut data = file.to_vec();
-                if is_decode {
-                    data = file_decode(data);
+            Err(err) => match err {
+                NotSupported(data) => {
+                    Uint8Array::from(data.as_slice())
                 }
-                Uint8Array::from(data.as_slice())
+                _ => {
+                    if is_decode {
+                        let mut data = file.to_vec();
+                        data = file_decode(data);
+                        Uint8Array::from(data.as_slice())
+                    } else {
+                        file
+                    }
+                }
             }
         }
     }

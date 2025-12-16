@@ -1,0 +1,54 @@
+version: '1.0'
+name: pipeline-20251216
+displayName: 自动发布
+triggers:
+  trigger: auto
+  push:
+    branches:
+      prefix:
+        - ''
+stages:
+  - name: stage-205c77e6
+    displayName: 未命名
+    strategy: naturally
+    trigger: auto
+    executor: []
+    steps:
+      - step: execute@docker
+        name: execute_by_docker
+        displayName: 基于镜像的脚本执行
+        certificate: ''
+        image: registry.cn-shenzhen.aliyuncs.com/zctnet/rust:slim-trixie
+        command:
+          - ENV RUSTUP_UPDATE_ROOT=https://mirrors.aliyun.com/rustup/rustup \
+          - '    RUSTUP_DIST_SERVER=https://mirrors.aliyun.com/rustup'
+          - ''
+          - COPY . /app
+          - WORKDIR /app
+          - ''
+          - RUN mkdir -p ~/.cargo \
+          - '    && { \'
+          - '        echo "[source.crates-io]"; \'
+          - '        echo "replace-with = ''aliyun''"; \'
+          - '        echo "[source.aliyun]"; \'
+          - '        echo "registry = \"sparse+https://mirrors.aliyun.com/crates.io-index/\""; \'
+          - '      } | tee ~/.cargo/config'
+          - ''
+          - RUN cargo install wasm-pack
+          - RUN cd /app/general \
+          - '    && wasm-pack build --release --target web \'
+          - '    && cd /app/general/pkg \'
+          - '    && echo //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc \'
+          - '    && npm publish || true'
+          - RUN cd /app/sign && wasm-pack build --release --target web \
+          - '    && cd /app/general/pkg \'
+          - '    && echo //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc \'
+          - '    && npm publish || true'
+          - ''
+        artifacts:
+          - name: BUILD_ARTIFACT
+            path:
+              - ./target
+        notify: []
+        strategy:
+          retry: '0'

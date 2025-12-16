@@ -20,7 +20,6 @@ stages:
         certificate: ''
         image: docker.io/rust:slim-trixie
         command:
-          - ARG NODE_AUTH_TOKEN=""
           - ENV RUSTUP_UPDATE_ROOT=https://mirrors.aliyun.com/rustup/rustup \
           - '    RUSTUP_DIST_SERVER=https://mirrors.aliyun.com/rustup'
           - ''

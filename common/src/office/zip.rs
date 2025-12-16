@@ -1,4 +1,4 @@
-use crate::extract::index::{out_tag, raw_variables};
+use crate::extract::index::raw_variables;
 use crate::office::excel::Excel;
 use crate::office::office::Office;
 use crate::office::word::Word;
@@ -24,7 +24,6 @@ pub struct Zip {
     files: HashMap<String, Box<[u8]>>,
     relationships: HashMap<String, Vec<RelationshipInfo>>,
 }
-
 
 const TYPE_WORD: u8 = 0;
 const TYPE_EXCEL: u8 = 1;
@@ -135,11 +134,11 @@ impl Zip {
             return None;
         }
         let mut res = join_all(tasks).await;
-        let mut files: HashMap<String, Box<[u8]>> = HashMap::new();
+        let mut files = HashMap::new();
         while let Some(file) = res.pop() {
             let name = names.pop().unwrap();
             if let Some(file) = file {
-                files.insert(name.parse().unwrap(), file);
+                files.insert(name.to_string(), file);
             }
         }
         Some(files)
@@ -147,29 +146,22 @@ impl Zip {
 
     //提取变量名
     pub async fn extract_variable_names(&self) -> Option<Vec<String>> {
-        let mut names = vec![];
+        let mut names_set = HashSet::new();
         if let Some(contents) = self.match_document_contents().await {
-            contents.iter().for_each(|(name, content)| {
-                if let Ok(s) = std::str::from_utf8(content) {
+            for (_, content) in contents {
+                if let Ok(s) = std::str::from_utf8(&content) {
                     let variables = raw_variables(s);
-                    variables.iter().for_each(|v| {
-                        names.push(out_tag(v));
-                    })
+                    for variable in variables {
+                        names_set.insert(variable.to_string());
+                    }
                 }
-            });
+            }
         }
-
-        if names.len() == 0 {
+        if names_set.len() == 0 {
             return None;
         }
 
-        Some(names.into_iter()
-            .fold((Vec::new(), HashSet::new()), |(mut acc, mut set), x| {
-                if set.insert(x.clone()) {
-                    acc.push(x);
-                }
-                (acc, set)
-            }).0)
+        Some(names_set.iter().cloned().collect())
     }
 
     //写入文件
@@ -294,6 +286,7 @@ impl Zip {
             writer.start_file(name, options).unwrap();
             writer.write_all(file).unwrap();
         }
+
         for i in 0..self.archive.len() {
             let entry = self.archive.by_index(i).unwrap();
             let name = entry.name().to_string();

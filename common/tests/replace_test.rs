@@ -1,11 +1,12 @@
 use async_std::path::Path;
+use common::export::common::{VariableValue, Variables, VariablesTrait};
+use common::export::encrypt::{file_decode, file_encode};
 use common::office::zip::{new as new_zip, Zip};
 use common::replace::data::Data;
 use common::replace::data::Value::Text;
 use common::replace::index::{File, Replace};
-use common::{file_decode, file_encode};
+use flate2::Crc;
 use futures::future::join_all;
-use futures::FutureExt;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Error, ErrorKind};
@@ -85,12 +86,74 @@ async fn replace() {
 
     let mut list = read_dir("D:\\其他\\test").await;
     // let mut list = read_dir("D:\\其他\\A 人权生成模板2022简").await;
-
     let mut execute_results = Replace::new(list.data, variables).execute().await;
     println!("{:?}", start.elapsed());
     while let Some(result) = execute_results.pop() {
         let name = list.names.pop().unwrap();
         fs::write("./out/".to_owned() + &*name, result);
+    }
+}
+
+#[async_std::test]
+async fn replace_params() {
+    let start = Instant::now();
+    let variables: Vec<Variables> = vec![
+        Variables {
+            text: HashMap::from([
+                ("${公司名}".to_string(), VariableValue::Text("name".to_string())),
+            ]),
+            media: HashMap::new(),
+        },
+        Variables {
+            text: HashMap::from([
+                ("${公司名}".to_string(), VariableValue::Text("name1".to_string())),
+            ]),
+            media: HashMap::new(),
+        },
+        Variables {
+            text: HashMap::from([
+                ("${公司名}".to_string(), VariableValue::Text("name2".to_string())),
+            ]),
+            media: HashMap::new(),
+        },
+        Variables {
+            text: HashMap::from([
+                ("${公司名}".to_string(), VariableValue::Text("name3".to_string())),
+            ]),
+            media: HashMap::new(),
+        },
+        Variables {
+            text: HashMap::from([
+                ("${公司名}".to_string(), VariableValue::Text("name4".to_string())),
+            ]),
+            media: HashMap::new(),
+        }
+    ];
+
+    let mut list = read_dir("D:\\其他\\test").await;
+    // let mut list = read_dir("D:\\其他\\A 人权生成模板2022简").await;
+    let medias = vec![];
+
+    let mut replace_task = Replace::new(list.data, Data {
+        text: None,
+        media: None,
+    });
+    let mut result = vec![];
+    for variable in variables {
+        let variable_data = variable.to_data(&medias);
+        replace_task.set_data(variable_data);
+        let execute_results = replace_task.execute().await;
+        for execute_result in execute_results.iter() {
+            let execute_result_vec = (&**execute_result).to_vec();
+            result.push(execute_result_vec);
+        }
+    }
+    println!("{:?}", start.elapsed());
+    let len = list.names.len();
+    for i in 0..result.len() {
+        println!("{}%{} = {}", i, len, i % len);
+        let name = list.names.get(len - 1 - i % len).unwrap();
+        fs::write("./out/".to_owned() + &*i.to_string() + name, result.get(i).unwrap().to_vec());
     }
 }
 

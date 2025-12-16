@@ -81,11 +81,11 @@ pub async fn replace_lock(office_mutex: Arc<Mutex<Zip>>, data: Arc<Data>) -> Box
     let mut office = office_mutex.lock().unwrap();
     if let Some(files) = office.match_document_contents().await {
         if let Some(text) = &data.text {
-            for (file_name, file_data) in files.iter() {
+            for (file_name, file_data) in files {
                 //提取出原始变量
-                if let Ok(content) = from_utf8(file_data) {
+                if let Ok(content) = from_utf8(&file_data) {
                     if let Some(replace_content_result) = replace_content(content, text) {
-                        office.write_file(file_name, replace_content_result.content);
+                        office.write_file(&file_name, replace_content_result.content);
                     }
                 }
             }
@@ -104,49 +104,43 @@ fn get_filename(path: &str) -> Option<&str> {
 pub async fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
     match file {
         File::Zip(office) => {
-            if let Some(text) = &data.text {
-                if !text.is_empty() {
-                    if let Some(files) = office.match_document_contents().await {
-                        for (file_name, file_data) in files.iter() {
-                            //提取出原始变量
-                            if let Ok(content) = from_utf8(file_data) {
-                                if let Some(replace_content_result) = replace_content(content, text) {
-                                    office.write_file(&file_name.to_string(), replace_content_result.content);
-                                    if replace_content_result.medias.is_empty() {
-                                        continue;
-                                    }
-                                    let mut relationships = vec![];
-                                    let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
-                                    for (key, file) in replace_content_result.medias {
-                                        let name = format!("{}media/{}", office.office().root_dir(), &*key);
-                                        office.write_media(name, file.file);
-                                        relationships.push(RelationshipInfo {
-                                            id: key.clone(),
-                                            target: key,
-                                            _type: String::from(file.relationship),
-                                        });
-                                    }
-                                    office.write_relationships(name, relationships);
-                                }
+            if let Some(text) = &data.text &&
+                !text.is_empty() &&
+                let Some(files) = office.match_document_contents().await {
+                for (file_name, file_data) in files {
+                    //提取出原始变量
+                    if let Ok(content) = from_utf8(&file_data) {
+                        if let Some(replace_content_result) = replace_content(content, text) {
+                            office.write_file(&file_name.to_string(), replace_content_result.content);
+                            if replace_content_result.medias.is_empty() {
+                                continue;
                             }
+                            let mut relationships = vec![];
+                            let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
+                            for (key, file) in replace_content_result.medias {
+                                let name = format!("{}media/{}", office.office().root_dir(), key);
+                                office.write_media(name, file.file);
+                                relationships.push(RelationshipInfo {
+                                    id: key.clone(),
+                                    target: key,
+                                    _type: String::from(file.relationship),
+                                });
+                            }
+                            office.write_relationships(name, relationships);
                         }
                     }
                 }
             }
 
-            if let Some(medias) = &data.media {
-                if !medias.is_empty() {
-                    if let Some(office_medias) = office.get_media_names().await {
-                        if !office_medias.is_empty() {
-                            for (key, name) in office_medias.iter() {
-                                if let Some(file) = medias.get(key) {
-                                    match file {
-                                        Text(_) => {}
-                                        Image(file) => {
-                                            office.write_media(name.clone(), file.file.clone());
-                                        }
-                                    }
-                                }
+            if let Some(medias) = &data.media &&
+                !medias.is_empty() &&
+                let Some(office_medias) = office.get_media_names().await {
+                for (key, name) in office_medias {
+                    if let Some(file) = medias.get(&key) {
+                        match file {
+                            Text(_) => {}
+                            Image(file) => {
+                                office.write_media(name, file.file.clone());
                             }
                         }
                     }
@@ -156,7 +150,7 @@ pub async fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
             office.finish().await
         }
         File::Result(file) => {
-            Box::from(file.clone())
+            file.to_vec().into_boxed_slice()
         }
     }
 }
@@ -167,6 +161,10 @@ impl Replace {
             files: VecDeque::from(files),
             data: Arc::new(data),
         }
+    }
+
+    pub fn set_data(&mut self, data: Data) {
+        self.data = Arc::new(data)
     }
 
     pub fn execute_thread(&mut self, mut concurrency: u8) -> Vec<Box<[u8]>> {
@@ -187,7 +185,7 @@ impl Replace {
     }
 
     async fn vec_to_box(v: &mut Vec<u8>) -> Box<[u8]> {
-        Box::from(v.clone())
+        v.to_vec().into_boxed_slice()
     }
 
     pub async fn execute(&mut self) -> Vec<Box<[u8]>> {

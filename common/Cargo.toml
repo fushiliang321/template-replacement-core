@@ -1,37 +1,34 @@
 [package]
 name = "common"
-version = "0.1.1"
+version = "1.5.0"
 edition = "2024"
 
 [dependencies]
 crossbeam-channel = "0.5.14"
 regex = "1.11.1"
 wasm-bindgen = { version = "0.2.99" }
-flate2 = "1.0.35"
-zip = { version = "2.2.2", default-features = false, features = ["_deflate-any", "deflate"] }
+zip = { version = "6.0.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 console_log = "1.0.0"
 log = "0.4.22"
 console_error_panic_hook = "0.1.7"
-serde = { version = "1.0.216", features = ["derive"] }
+serde = { version = "1.0.216", default-features = false, features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 js-sys = "0.3.76"
 lazy_static = "1.5.0"
-async_zip = { version = "0.0.17", features = ["full-wasm"] }
-async-std = { version = "1.13.0", features = ["attributes"] }
+async_zip = { version = "0.0.18", default-features = false, features = ["deflate"] }
 futures = "0.3.31"
-md-5 = "0.10.6"
 wasm-bindgen-futures = "0.4.49"
 once_cell = "1.20.2"
-serde_json = "1.0.134"
 rmp-serde = "1.3.0"
 base64 = "0.22.1"
 aes = "0.8.4"
 cipher = "0.4.4"
-cbc = "0.1.2"
 ofb = "0.6.1"
+flate2 = "1.1.5"
 
 [dev-dependencies]
 console_error_panic_hook = "0.1.7"
+async-std = { version = "1.13.0", features = ["attributes"] }
 
 [lib]
 name = "common"
@@ -39,13 +36,8 @@ path = "src/lib.rs"
 crate-type = ["rlib", "dylib"]
 
 [features]
-_deflate-any = ["deflate-flate2"]
-deflate-flate2 = ["flate2/any_impl", "flate2/rust_backend", "_deflate-any"]
+general = []
 param-sign = []
 
-[profile.release]
-opt-level = 3  # 最大化性能
-lto = true       # 启用链接时优化
-codegen-units = 1
-panic = 'abort'  # 出现 panic 时直接终止程序
-debug = false
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']

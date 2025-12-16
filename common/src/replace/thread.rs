@@ -91,8 +91,8 @@ impl Thread {
 
         let mut res = Vec::new();
         let results = self.results.lock().unwrap();
-        for id in ids {
-            match results.get(&id) {
+        for id in &ids {
+            match results.get(id) {
                 Some(result) => {
                     res.push(result.clone());
                 }

@@ -1,6 +1,6 @@
 [package]
 name = "template-replacement-sign-core-wasm"
-version = "1.1.2"
+version = "1.5.0"
 edition = "2024"
 description = "模板替换核心wasm库（签名版）"
 license = "Apache 2.0"
@@ -11,10 +11,3 @@ common = { path = "../common", features = ["param-sign"] }
 [lib]
 path = "src/lib.rs"
 crate-type = ["cdylib"]
-
-[profile.release]
-opt-level = 3  # 最大化性能
-lto = true       # 启用链接时优化
-codegen-units = 1
-panic = 'abort'  # 出现 panic 时直接终止程序
-debug = false

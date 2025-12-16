@@ -19,14 +19,17 @@ fn salt() -> &'static String {
         let str3 = "309";
         // base64("309180455d7a54855d")
         let str4 = String::from_utf8(BASE64_STANDARD.decode("MTgwNDU1ZDdhNTQ4NTVk").unwrap()).unwrap();
-        str1.to_owned() + &*str2 + &*str3+ &*str4
+        str1.to_owned() + &*str2 + &*str3 + &*str4
     })
 }
+
+static VERSION_STR: &str = "version";
+static DATA_STR: &str = "data";
 
 pub fn verify(code: &String, data: &String) -> bool {
     let version = version();
     let salt = salt();
-    let str = format!("{}={}&{}={}&{}&{}","data".to_string(), data,"version".to_string(), version, salt, version);
+    let str = format!("{}={}&{}={}&{}&{}", DATA_STR, data, VERSION_STR, version, salt, version);
     let mut crc = Crc::new();
     crc.update(str.as_bytes());
     code.eq(&crc.sum().to_string())

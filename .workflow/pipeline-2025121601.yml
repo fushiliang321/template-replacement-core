@@ -26,7 +26,7 @@ stages:
         displayName: 发布general
         nodeVersion: 24.5.0
         commands:
-          - cd ${WORKSPACE}/general/pkg
+          - cd general/pkg
           - echo //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc
           - npm publish
         artifacts:
@@ -44,7 +44,7 @@ stages:
         displayName: 发布sign
         nodeVersion: 24.5.0
         commands:
-          - cd ${WORKSPACE}/sign/pkg
+          - cd sign/pkg
           - echo //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc
           - npm publish
         artifacts:

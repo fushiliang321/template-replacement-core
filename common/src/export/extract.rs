@@ -29,17 +29,18 @@ pub async fn extract_one_file_variable_names(data: Uint8Array, is_decode: bool) 
 
 //多文件批量提取变量名
 #[wasm_bindgen]
-pub async fn extract_variable_names(files: Vec<Uint8Array>, is_decode: bool) -> Vec<String> {
+pub async fn extract_variable_names(files: Vec<Uint8Array>, encode_files: Vec<Uint8Array>) -> Vec<String> {
     let mut tasks = vec![];
     for file in files {
-        tasks.push(extract_one_file_variable_names(file, is_decode))
+        tasks.push(extract_one_file_variable_names(file, false))
     }
-
+    for file in encode_files {
+        tasks.push(extract_one_file_variable_names(file, true))
+    }
     let res = join_all(tasks).await;
 
     let mut seen = HashSet::new();
     let mut result = Vec::new();
-
     for item in res.into_iter().flatten() {
         if seen.get(&item).is_none() {
             seen.insert(item.clone());
@@ -70,13 +71,16 @@ pub async fn extract_one_file_medias(data: &Uint8Array, is_decode: bool) -> JsVa
 
 //多文件批量提取媒体文件
 #[wasm_bindgen]
-pub async fn extract_medias(files: Vec<Uint8Array>, is_decode: bool) -> JsValue {
+pub async fn extract_medias(files: Vec<Uint8Array>, encode_files: Vec<Uint8Array>) -> JsValue {
     let mut tasks = vec![];
     for file in files {
+        let file = file.to_vec();
+        tasks.push(_extract_one_file_medias(file))
+    }
+
+    for file in encode_files {
         let mut file = file.to_vec();
-        if is_decode {
-            file = file_decode(file);
-        }
+        file = file_decode(file);
         tasks.push(_extract_one_file_medias(file))
     }
 

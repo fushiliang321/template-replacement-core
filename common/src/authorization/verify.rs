@@ -26,7 +26,7 @@ fn salt() -> &'static String {
 static VERSION_STR: &str = "version";
 static DATA_STR: &str = "data";
 
-pub fn verify(code: &String, data: &String) -> bool {
+pub fn verify(code: &str, data: &str) -> bool {
     let version = version();
     let salt = salt();
     let str = format!("{}={}&{}={}&{}&{}", DATA_STR, data, VERSION_STR, version, salt, version);

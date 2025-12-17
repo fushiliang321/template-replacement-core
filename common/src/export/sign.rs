@@ -17,7 +17,7 @@ pub(crate) struct AddReplaceParamsResult {
 
 //批量替换并验证参数
 #[wasm_bindgen]
-pub async fn replace_batch(verify_code: String, params_data: String) -> Vec<Uint8Array> {
+pub async fn replace_batch(verify_code: &str, params_data: &str) -> Vec<Uint8Array> {
     if let Some(params) = params_decode::<ReplaceParams>(verify_code, params_data) {
         let files = params.get_files();
         let variables = params.get_variables(&vec![]);
@@ -28,7 +28,7 @@ pub async fn replace_batch(verify_code: String, params_data: String) -> Vec<Uint
 
 //批量替换并验证参数（多套参数）
 #[wasm_bindgen]
-pub async fn replace_batch_multiple_params(verify_code: String, params_data: String) -> Vec<Uint8Array> {
+pub async fn replace_batch_multiple_params(verify_code: &str, params_data: &str) -> Vec<Uint8Array> {
     if let Some(params) = params_decode::<BatchReplaceParams>(verify_code, params_data) {
         let files = params.get_files();
         return replace_execute_multiple_params(params.variables, &vec![], files).await;
@@ -38,7 +38,7 @@ pub async fn replace_batch_multiple_params(verify_code: String, params_data: Str
 
 //批量替换并验证参数并压缩
 #[wasm_bindgen]
-pub async fn replace_batch_to_zip(verify_code: String, params_data: String) -> Vec<u8> {
+pub async fn replace_batch_to_zip(verify_code: &str, params_data: &str) -> Vec<u8> {
     if let Some(params) = params_decode::<ReplaceParams>(verify_code, params_data) {
         let files = params.get_files();
         let variables = params.get_variables(&vec![]);
@@ -51,7 +51,7 @@ pub async fn replace_batch_to_zip(verify_code: String, params_data: String) -> V
 
 //批量文件替换并压缩（多套参数）
 #[wasm_bindgen]
-pub async fn replace_batch_multiple_params_to_zip(verify_code: String, params_data: String) -> Vec<u8> {
+pub async fn replace_batch_multiple_params_to_zip(verify_code: &str, params_data: &str) -> Vec<u8> {
     if let Some(params) = params_decode::<BatchReplaceParams>(verify_code, params_data) {
         let files = params.get_files();
         if let Some(file_names) = params.file_names {
@@ -75,7 +75,7 @@ pub fn replace_params_encode_multiple_params(params: JsValue) -> JsValue {
 
 //参数编码
 fn params_encode<T: serde::de::DeserializeOwned + serde::Serialize>(params: JsValue) -> JsValue {
-    let params_data: T = from_value(params).unwrap();
+    let params_data = from_value::<T>(params).unwrap();
     let encoded = encode(&params_data);
     let version = version();
     serde_wasm_bindgen::to_value(&AddReplaceParamsResult {
@@ -85,11 +85,11 @@ fn params_encode<T: serde::de::DeserializeOwned + serde::Serialize>(params: JsVa
 }
 
 //参数解码
-fn params_decode<T: serde::de::DeserializeOwned + serde::Serialize>(verify_code: String, params_data: String) -> Option<T> {
-    if !verify(&verify_code, &params_data) {
+fn params_decode<T: serde::de::DeserializeOwned + serde::Serialize>(verify_code: &str, params_data: &str) -> Option<T> {
+    if !verify(verify_code, params_data) {
         return None;
     }
-    let data = BASE64_STANDARD.decode(&params_data).unwrap();
+    let data = BASE64_STANDARD.decode(params_data).unwrap();
     let params = decode::<T>(data.as_slice()).unwrap();
     Some(params)
 }

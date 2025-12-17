@@ -32,7 +32,7 @@ fn extract_variables(content: &str) -> HashMap<&str, String> {
     }
     for raw_var in raw_vars {
         let var_name = out_tag(raw_var);
-        variables.insert(raw_var, var_name.to_string());
+        variables.insert(raw_var, var_name);
     }
     variables
 }

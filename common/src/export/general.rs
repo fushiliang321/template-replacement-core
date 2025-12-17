@@ -1,8 +1,7 @@
-use crate::export::common::{batch_uint8array_to_replace_file, replace_execute, replace_execute_multiple_params, uint8array_to_replace_file, BatchReplaceParams, ReplaceParams, Variables, VariablesTrait};
+use crate::export::common::{batch_uint8array_to_replace_file, replace_execute, replace_execute_multiple_params, BatchReplaceParams, ReplaceParams, Variables, VariablesTrait};
 use crate::export::encrypt::file_decode;
 use crate::office::zip::Error::NotSupported;
 use crate::replace::index::{File, Replace};
-use futures::future::join_all;
 use js_sys::Uint8Array;
 use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -58,17 +57,11 @@ pub async fn replace_batch(
     params: JsValue,
     medias: Vec<Uint8Array>, //媒体文件
     files: Vec<Uint8Array>, //模板文件
-    is_decode: bool,
+    encode_files: Vec<Uint8Array>, //加密的模板文件
 ) -> Vec<Uint8Array> {
     let variables: Variables = from_value(params).unwrap();
-    let mut tasks = vec![];
-
-    for file in files {
-        tasks.push(uint8array_to_replace_file(file, is_decode));
-    }
-    let res = join_all(tasks).await;
-
-    replace_execute(variables.to_data(&medias), res).await
+    let files = batch_uint8array_to_replace_file(files, encode_files).await;
+    replace_execute(variables.to_data(&medias), files).await
 }
 
 //文件替换（多套参数），需要提前添加文件
@@ -85,9 +78,9 @@ pub async fn replace_batch_multiple_params(
     params: JsValue,
     medias: Vec<Uint8Array>, //媒体文件
     files: Vec<Uint8Array>, //模板文件
-    is_decode: bool,
+    encode_files: Vec<Uint8Array>, //加密的模板文件
 ) -> Vec<Uint8Array> {
     let params_data: Vec<Variables> = from_value(params).unwrap();
-    let files = batch_uint8array_to_replace_file(files, is_decode).await;
+    let files = batch_uint8array_to_replace_file(files, encode_files).await;
     replace_execute_multiple_params(params_data, &medias, files).await
 }

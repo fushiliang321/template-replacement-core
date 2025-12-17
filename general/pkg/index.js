@@ -352,15 +352,17 @@ export function replace(params, medias) {
  * @param {any} params
  * @param {Uint8Array[]} medias
  * @param {Uint8Array[]} files
- * @param {boolean} is_decode
+ * @param {Uint8Array[]} encode_files
  * @returns {Promise<Uint8Array[]>}
  */
-export function replace_batch(params, medias, files, is_decode) {
+export function replace_batch(params, medias, files, encode_files) {
     const ptr0 = passArrayJsValueToWasm0(medias, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passArrayJsValueToWasm0(files, wasm.__wbindgen_malloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.replace_batch(params, ptr0, len0, ptr1, len1, is_decode);
+    const ptr2 = passArrayJsValueToWasm0(encode_files, wasm.__wbindgen_malloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.replace_batch(params, ptr0, len0, ptr1, len1, ptr2, len2);
     return ret;
 }
 
@@ -368,15 +370,17 @@ export function replace_batch(params, medias, files, is_decode) {
  * @param {any} params
  * @param {Uint8Array[]} medias
  * @param {Uint8Array[]} files
- * @param {boolean} is_decode
+ * @param {Uint8Array[]} encode_files
  * @returns {Promise<Uint8Array[]>}
  */
-export function replace_batch_multiple_params(params, medias, files, is_decode) {
+export function replace_batch_multiple_params(params, medias, files, encode_files) {
     const ptr0 = passArrayJsValueToWasm0(medias, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passArrayJsValueToWasm0(files, wasm.__wbindgen_malloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.replace_batch_multiple_params(params, ptr0, len0, ptr1, len1, is_decode);
+    const ptr2 = passArrayJsValueToWasm0(encode_files, wasm.__wbindgen_malloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.replace_batch_multiple_params(params, ptr0, len0, ptr1, len1, ptr2, len2);
     return ret;
 }
 

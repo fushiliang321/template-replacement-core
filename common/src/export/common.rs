@@ -69,7 +69,6 @@ pub struct Variables {
 pub(crate) struct ReplaceParams<T = Variables> {
     pub(crate) files: Vec<u32>, //文件数据
     pub(crate) variables: T, //参数数据
-    pub(crate) file_names: Option<Vec<String>>, //模板文件名称
 }
 
 //批量替换参数
@@ -180,10 +179,13 @@ pub(crate) async fn uint8array_to_replace_file(file: Uint8Array, is_decode: bool
 }
 
 //批量文件uint8array转模板文件对象
-pub(crate) async fn batch_uint8array_to_replace_file(files: Vec<Uint8Array>, is_decode: bool) -> Vec<File> {
+pub(crate) async fn batch_uint8array_to_replace_file(files: Vec<Uint8Array>, encode_files: Vec<Uint8Array>) -> Vec<File> {
     let mut tasks = vec![];
     for file in files {
-        tasks.push(uint8array_to_replace_file(file, is_decode));
+        tasks.push(uint8array_to_replace_file(file, false));
+    }
+    for file in encode_files {
+        tasks.push(uint8array_to_replace_file(file, true));
     }
     join_all(tasks).await
 }

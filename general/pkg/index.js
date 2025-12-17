@@ -266,13 +266,15 @@ export function add_template(file_data, is_decode) {
 
 /**
  * @param {Uint8Array[]} files
- * @param {boolean} is_decode
+ * @param {Uint8Array[]} encode_files
  * @returns {Promise<any>}
  */
-export function extract_medias(files, is_decode) {
+export function extract_medias(files, encode_files) {
     const ptr0 = passArrayJsValueToWasm0(files, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.extract_medias(ptr0, len0, is_decode);
+    const ptr1 = passArrayJsValueToWasm0(encode_files, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.extract_medias(ptr0, len0, ptr1, len1);
     return ret;
 }
 
@@ -298,13 +300,15 @@ export function extract_one_file_variable_names(data, is_decode) {
 
 /**
  * @param {Uint8Array[]} files
- * @param {boolean} is_decode
+ * @param {Uint8Array[]} encode_files
  * @returns {Promise<string[]>}
  */
-export function extract_variable_names(files, is_decode) {
+export function extract_variable_names(files, encode_files) {
     const ptr0 = passArrayJsValueToWasm0(files, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.extract_variable_names(ptr0, len0, is_decode);
+    const ptr1 = passArrayJsValueToWasm0(encode_files, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.extract_variable_names(ptr0, len0, ptr1, len1);
     return ret;
 }
 

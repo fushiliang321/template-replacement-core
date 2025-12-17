@@ -3,10 +3,10 @@
 export const memory: WebAssembly.Memory;
 export const add_media: (a: any) => [number, number];
 export const add_template: (a: any, b: number) => any;
-export const extract_medias: (a: number, b: number, c: number) => any;
+export const extract_medias: (a: number, b: number, c: number, d: number) => any;
 export const extract_one_file_medias: (a: any, b: number) => any;
 export const extract_one_file_variable_names: (a: any, b: number) => any;
-export const extract_variable_names: (a: number, b: number, c: number) => any;
+export const extract_variable_names: (a: number, b: number, c: number, d: number) => any;
 export const file_encrypt: (a: any) => [number, number];
 export const files_encrypt: (a: number, b: number) => [number, number];
 export const main: () => void;

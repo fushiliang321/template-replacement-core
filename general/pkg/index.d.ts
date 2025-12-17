@@ -5,13 +5,13 @@ export function add_media(file: Uint8Array): string;
 
 export function add_template(file_data: Uint8Array, is_decode: boolean): Promise<number>;
 
-export function extract_medias(files: Uint8Array[], is_decode: boolean): Promise<any>;
+export function extract_medias(files: Uint8Array[], encode_files: Uint8Array[]): Promise<any>;
 
 export function extract_one_file_medias(data: Uint8Array, is_decode: boolean): Promise<any>;
 
 export function extract_one_file_variable_names(data: Uint8Array, is_decode: boolean): Promise<string[]>;
 
-export function extract_variable_names(files: Uint8Array[], is_decode: boolean): Promise<string[]>;
+export function extract_variable_names(files: Uint8Array[], encode_files: Uint8Array[]): Promise<string[]>;
 
 export function file_encrypt(file: Uint8Array): Uint8Array;
 
@@ -35,10 +35,10 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly add_media: (a: any) => [number, number];
   readonly add_template: (a: any, b: number) => any;
-  readonly extract_medias: (a: number, b: number, c: number) => any;
+  readonly extract_medias: (a: number, b: number, c: number, d: number) => any;
   readonly extract_one_file_medias: (a: any, b: number) => any;
   readonly extract_one_file_variable_names: (a: any, b: number) => any;
-  readonly extract_variable_names: (a: number, b: number, c: number) => any;
+  readonly extract_variable_names: (a: number, b: number, c: number, d: number) => any;
   readonly file_encrypt: (a: any) => [number, number];
   readonly files_encrypt: (a: number, b: number) => [number, number];
   readonly main: () => void;

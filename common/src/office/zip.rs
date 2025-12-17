@@ -1,4 +1,4 @@
-use crate::extract::index::raw_variables;
+use crate::extract::index::{out_tag, raw_variables};
 use crate::office::excel::Excel;
 use crate::office::office::Office;
 use crate::office::word::Word;
@@ -152,7 +152,7 @@ impl Zip {
                 if let Ok(s) = std::str::from_utf8(&content) {
                     let variables = raw_variables(s);
                     for variable in variables {
-                        names_set.insert(variable.to_string());
+                        names_set.insert(out_tag(variable));
                     }
                 }
             }

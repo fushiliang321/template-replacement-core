@@ -1,5 +1,5 @@
 use crate::authorization::verify::{decode, encode, verify};
-use crate::export::common::{replace_execute, replace_execute_multiple_params, replace_execute_multiple_params_to_zip, replace_execute_to_zip, BatchReplaceParams, ReplaceParams};
+use crate::export::common::{replace_execute, replace_execute_multiple_params, BatchReplaceParams, ReplaceParams};
 use crate::version;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
@@ -32,31 +32,6 @@ pub async fn replace_batch_multiple_params(verify_code: &str, params_data: &str)
     if let Some(params) = params_decode::<BatchReplaceParams>(verify_code, params_data) {
         let files = params.get_files();
         return replace_execute_multiple_params(params.variables, &vec![], files).await;
-    }
-    vec![]
-}
-
-//批量替换并验证参数并压缩
-#[wasm_bindgen]
-pub async fn replace_batch_to_zip(verify_code: &str, params_data: &str) -> Vec<u8> {
-    if let Some(params) = params_decode::<ReplaceParams>(verify_code, params_data) {
-        let files = params.get_files();
-        let variables = params.get_variables(&vec![]);
-        if let Some(file_names) = params.file_names {
-            return replace_execute_to_zip(variables, files, file_names).await;
-        }
-    }
-    vec![]
-}
-
-//批量文件替换并压缩（多套参数）
-#[wasm_bindgen]
-pub async fn replace_batch_multiple_params_to_zip(verify_code: &str, params_data: &str) -> Vec<u8> {
-    if let Some(params) = params_decode::<BatchReplaceParams>(verify_code, params_data) {
-        let files = params.get_files();
-        if let Some(file_names) = params.file_names {
-            return replace_execute_multiple_params_to_zip(params.variables, &vec![], files, file_names).await;
-        }
     }
     vec![]
 }

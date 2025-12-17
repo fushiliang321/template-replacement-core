@@ -25,10 +25,6 @@ export function replace_batch(params: any, medias: Uint8Array[], files: Uint8Arr
 
 export function replace_batch_multiple_params(params: any, medias: Uint8Array[], files: Uint8Array[], is_decode: boolean): Promise<Uint8Array[]>;
 
-export function replace_batch_multiple_params_to_zip(params: any, medias: Uint8Array[], files: Uint8Array[], file_names: string[], is_decode: boolean): Promise<Uint8Array>;
-
-export function replace_batch_to_zip(params: any, medias: Uint8Array[], files: Uint8Array[], file_names: string[], is_decode: boolean): Promise<Uint8Array>;
-
 export function replace_item(variables: any, medias: Uint8Array[], file: Uint8Array, is_decode: boolean): Promise<Uint8Array>;
 
 export function replace_multiple_params(params: any, medias: Uint8Array[]): Promise<Uint8Array[]>;
@@ -49,8 +45,6 @@ export interface InitOutput {
   readonly replace: (a: any, b: number, c: number) => any;
   readonly replace_batch: (a: any, b: number, c: number, d: number, e: number, f: number) => any;
   readonly replace_batch_multiple_params: (a: any, b: number, c: number, d: number, e: number, f: number) => any;
-  readonly replace_batch_multiple_params_to_zip: (a: any, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => any;
-  readonly replace_batch_to_zip: (a: any, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => any;
   readonly replace_item: (a: any, b: number, c: number, d: any, e: number) => any;
   readonly replace_multiple_params: (a: any, b: number, c: number) => any;
   readonly wasm_bindgen__convert__closures_____invoke__h5c763851625a2d40: (a: number, b: number, c: any) => void;

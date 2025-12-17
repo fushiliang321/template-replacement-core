@@ -11,11 +11,8 @@ use js_sys::Uint8Array;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{Cursor, Write};
 use std::sync::Mutex;
 use wasm_bindgen::prelude::wasm_bindgen;
-use zip::write::SimpleFileOptions;
-use zip::ZipWriter;
 
 lazy_static! {
     static ref INDEX: Mutex<u32> = Mutex::new(index_init());
@@ -221,58 +218,6 @@ pub(crate) async fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Ui
         result.push(uint8array);
     }
     result
-}
-
-//单套参数替换并生成zip
-pub(crate) async fn replace_execute_to_zip(variables: Data, files: Vec<File>, file_names: Vec<String>) -> Vec<u8> {
-    let execute_results = Replace::new(files, variables).execute().await;
-
-    let mut buffer = Vec::new();
-    let mut writer = ZipWriter::new(Cursor::new(&mut buffer));
-    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-
-    for (i, execute_result) in execute_results.iter().enumerate() {
-        if let Some(name) = file_names.get(i) {
-            let execute_result_vec = execute_result.iter().as_slice();
-            writer.start_file(format!("{}", name), options).unwrap();
-            writer.write_all(execute_result_vec).unwrap();
-        }
-    }
-    writer.finish().unwrap();
-    buffer
-}
-
-//多套参数替换并生成zip
-pub async fn replace_execute_multiple_params_to_zip(variables: Vec<Variables>, medias: &Vec<Uint8Array>, files: Vec<File>, file_names: Vec<String>) -> Vec<u8> {
-    let mut replace_task = Replace::new(files, Data {
-        text: None,
-        media: None,
-    });
-
-    let mut buffer = Vec::new();
-    let mut writer = ZipWriter::new(Cursor::new(&mut buffer));
-    let options =
-        SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-
-    for (i, variable) in variables.iter().enumerate() {
-        let variable_data = variable.to_data(&medias);
-        replace_task.set_data(variable_data);
-        let execute_results = replace_task.execute().await;
-
-        for (ii, execute_result) in execute_results.iter().enumerate() {
-            match file_names.get(ii) {
-                Some(name) => {
-                    let execute_result_vec = execute_result.iter().as_slice();
-                    writer.start_file(format!("{}/{}", i, name), options).unwrap();
-                    writer.write_all(execute_result_vec).unwrap();
-                }
-                None => {}
-            }
-        }
-    }
-
-    writer.finish().unwrap();
-    buffer
 }
 
 //媒体文件数据转图片对象

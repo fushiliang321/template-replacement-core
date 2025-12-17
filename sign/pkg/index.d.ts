@@ -23,10 +23,6 @@ export function replace_batch(verify_code: string, params_data: string): Promise
 
 export function replace_batch_multiple_params(verify_code: string, params_data: string): Promise<Uint8Array[]>;
 
-export function replace_batch_multiple_params_to_zip(verify_code: string, params_data: string): Promise<Uint8Array>;
-
-export function replace_batch_to_zip(verify_code: string, params_data: string): Promise<Uint8Array>;
-
 export function replace_params_encode(params: any): any;
 
 export function replace_params_encode_multiple_params(params: any): any;
@@ -46,8 +42,6 @@ export interface InitOutput {
   readonly main: () => void;
   readonly replace_batch: (a: number, b: number, c: number, d: number) => any;
   readonly replace_batch_multiple_params: (a: number, b: number, c: number, d: number) => any;
-  readonly replace_batch_multiple_params_to_zip: (a: number, b: number, c: number, d: number) => any;
-  readonly replace_batch_to_zip: (a: number, b: number, c: number, d: number) => any;
   readonly replace_params_encode: (a: any) => any;
   readonly replace_params_encode_multiple_params: (a: any) => any;
   readonly wasm_bindgen__convert__closures_____invoke__h5c763851625a2d40: (a: number, b: number, c: any) => void;

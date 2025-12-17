@@ -365,34 +365,6 @@ export function replace_batch_multiple_params(verify_code, params_data) {
 }
 
 /**
- * @param {string} verify_code
- * @param {string} params_data
- * @returns {Promise<Uint8Array>}
- */
-export function replace_batch_multiple_params_to_zip(verify_code, params_data) {
-    const ptr0 = passStringToWasm0(verify_code, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(params_data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.replace_batch_multiple_params_to_zip(ptr0, len0, ptr1, len1);
-    return ret;
-}
-
-/**
- * @param {string} verify_code
- * @param {string} params_data
- * @returns {Promise<Uint8Array>}
- */
-export function replace_batch_to_zip(verify_code, params_data) {
-    const ptr0 = passStringToWasm0(verify_code, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(params_data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.replace_batch_to_zip(ptr0, len0, ptr1, len1);
-    return ret;
-}
-
-/**
  * @param {any} params
  * @returns {any}
  */
@@ -728,16 +700,9 @@ function __wbg_get_imports() {
         const ret = BigInt.asUintN(64, arg0);
         return ret;
     };
-    imports.wbg.__wbindgen_cast_62423eba93f4d670 = function(arg0, arg1) {
-        // Cast intrinsic for `Closure(Closure { dtor_idx: 166, function: Function { arguments: [Externref], shim_idx: 167, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+    imports.wbg.__wbindgen_cast_a241b71f7f917411 = function(arg0, arg1) {
+        // Cast intrinsic for `Closure(Closure { dtor_idx: 165, function: Function { arguments: [Externref], shim_idx: 166, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
         const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__hd716590baeba421e, wasm_bindgen__convert__closures_____invoke__h5c763851625a2d40);
-        return ret;
-    };
-    imports.wbg.__wbindgen_cast_77bc3e92745e9a35 = function(arg0, arg1) {
-        var v0 = getArrayU8FromWasm0(arg0, arg1).slice();
-        wasm.__wbindgen_free(arg0, arg1 * 1, 1);
-        // Cast intrinsic for `Vector(U8) -> Externref`.
-        const ret = v0;
         return ret;
     };
     imports.wbg.__wbindgen_cast_d6cd19b81560fd6e = function(arg0) {

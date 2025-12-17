@@ -1,4 +1,4 @@
-use crate::export::common::{batch_uint8array_to_replace_file, replace_execute, replace_execute_multiple_params, replace_execute_multiple_params_to_zip, replace_execute_to_zip, uint8array_to_replace_file, BatchReplaceParams, ReplaceParams, Variables, VariablesTrait};
+use crate::export::common::{batch_uint8array_to_replace_file, replace_execute, replace_execute_multiple_params, uint8array_to_replace_file, BatchReplaceParams, ReplaceParams, Variables, VariablesTrait};
 use crate::export::encrypt::file_decode;
 use crate::office::zip::Error::NotSupported;
 use crate::replace::index::{File, Replace};
@@ -90,32 +90,4 @@ pub async fn replace_batch_multiple_params(
     let params_data: Vec<Variables> = from_value(params).unwrap();
     let files = batch_uint8array_to_replace_file(files, is_decode).await;
     replace_execute_multiple_params(params_data, &medias, files).await
-}
-
-//批量文件替换并压缩
-#[wasm_bindgen]
-pub async fn replace_batch_to_zip(
-    params: JsValue,
-    medias: Vec<Uint8Array>, //媒体文件
-    files: Vec<Uint8Array>, //模板文件
-    file_names: Vec<String>, //模板文件名称
-    is_decode: bool,
-) -> Vec<u8> {
-    let variables: Variables = from_value(params).unwrap();
-    let files = batch_uint8array_to_replace_file(files, is_decode).await;
-    replace_execute_to_zip(variables.to_data(&medias), files, file_names).await
-}
-
-//批量文件替换并压缩（多套参数）
-#[wasm_bindgen]
-pub async fn replace_batch_multiple_params_to_zip(
-    params: JsValue,
-    medias: Vec<Uint8Array>, //媒体文件
-    files: Vec<Uint8Array>, //模板文件数据
-    file_names: Vec<String>, //模板文件名称
-    is_decode: bool,
-) -> Vec<u8> {
-    let params_data: Vec<Variables> = from_value(params).unwrap();
-    let files = batch_uint8array_to_replace_file(files, is_decode).await;
-    replace_execute_multiple_params_to_zip(params_data, &medias, files, file_names).await
 }

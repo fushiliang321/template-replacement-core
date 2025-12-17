@@ -1,0 +1,47 @@
+version: '1.0'
+name: pipeline-2025121601
+displayName: 发布
+triggers:
+  trigger: auto
+  push:
+    branches:
+      prefix:
+        - master
+    paths:
+      precise:
+        - general/
+        - sign/
+variables:
+  global:
+    - NODE_AUTH_TOKEN
+stages:
+  - name: stage-f10847d4
+    displayName: 发布
+    strategy: naturally
+    trigger: auto
+    executor: []
+    steps:
+      - step: build@nodejs
+        name: npm_publish_general
+        displayName: 发布general
+        nodeVersion: 24.5.0
+        commands:
+          - cd general/pkg
+          - echo //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc
+          - npm publish
+        caches: []
+        notify: []
+        strategy:
+          retry: '0'
+      - step: build@nodejs
+        name: npm_publish_sign
+        displayName: 发布sign
+        nodeVersion: 24.5.0
+        commands:
+          - cd sign/pkg
+          - echo //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc
+          - npm publish
+        caches: []
+        notify: []
+        strategy:
+          retry: '0'

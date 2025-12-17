@@ -15,7 +15,7 @@ static VERSION: OnceCell<&str> = OnceCell::new();
 // 获取版本号
 pub(crate) fn version() -> &'static str {
     VERSION.get_or_init(|| {
-        "1.5.0"
+        env!("CARGO_PKG_VERSION")
     })
 }
 

@@ -47,9 +47,9 @@ export interface InitOutput {
   readonly replace_batch_multiple_params: (a: any, b: number, c: number, d: number, e: number, f: number, g: number) => any;
   readonly replace_item: (a: any, b: number, c: number, d: any, e: number) => any;
   readonly replace_multiple_params: (a: any, b: number, c: number) => any;
-  readonly wasm_bindgen__convert__closures_____invoke__h9d8898d17766bd25: (a: number, b: number, c: any) => void;
-  readonly wasm_bindgen__closure__destroy__hb72aa2f29b5db3cb: (a: number, b: number) => void;
-  readonly wasm_bindgen__convert__closures_____invoke__h30e9a102fd50c1d4: (a: number, b: number, c: any, d: any) => void;
+  readonly wasm_bindgen__convert__closures_____invoke__hc67b5f1167623913: (a: number, b: number, c: any) => void;
+  readonly wasm_bindgen__closure__destroy__hb0c28b168af5f93f: (a: number, b: number) => void;
+  readonly wasm_bindgen__convert__closures_____invoke__h180f14b7918b59ca: (a: number, b: number, c: any, d: any) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;

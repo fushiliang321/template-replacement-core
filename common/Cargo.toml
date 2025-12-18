@@ -33,11 +33,7 @@ async-std = { version = "1.13.0", features = ["attributes"] }
 [lib]
 name = "common"
 path = "src/lib.rs"
-crate-type = ["rlib", "dylib"]
 
 [features]
 general = []
 param-sign = []
-
-[target.wasm32-unknown-unknown]
-rustflags = ['--cfg', 'getrandom_backend="wasm_js"']

@@ -5,7 +5,6 @@ use common::office::zip::{new as new_zip, Zip};
 use common::replace::data::Data;
 use common::replace::data::Value::Text;
 use common::replace::index::{File, Replace};
-use flate2::Crc;
 use futures::future::join_all;
 use std::collections::HashMap;
 use std::fs;
@@ -197,7 +196,7 @@ async fn file_encode_test() {
             let name = path.file_name()
                 .and_then(|name| name.to_str())
                 .map(|name| name).unwrap();
-
+            println!("{}", name);
             let res = file_encode(data);
             fs::write("./out/en/".to_owned() + &*name, res).expect("TODO: panic message");
         }

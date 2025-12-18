@@ -1,0 +1,17 @@
+{
+  "name": "template-replacement-sign-core-wasm",
+  "type": "module",
+  "description": "模板替换核心wasm库（签名版）",
+  "version": "1.7.3",
+  "license": "Apache 2.0",
+  "files": [
+    "template_replacement_sign_core_wasm_bg.wasm",
+    "template_replacement_sign_core_wasm.js",
+    "template_replacement_sign_core_wasm.d.ts"
+  ],
+  "main": "template_replacement_sign_core_wasm.js",
+  "types": "template_replacement_sign_core_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

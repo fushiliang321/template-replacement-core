@@ -3,15 +3,15 @@
 
 export function add_media(file: Uint8Array): string;
 
-export function add_template(file_data: Uint8Array, is_decode: boolean): Promise<number>;
+export function add_template(file_data: Uint8Array, is_decode: boolean): number;
 
-export function extract_medias(files: Uint8Array[], encode_files: Uint8Array[]): Promise<any>;
+export function extract_medias(files: Uint8Array[], encode_files: Uint8Array[]): any;
 
-export function extract_one_file_medias(data: Uint8Array, is_decode: boolean): Promise<any>;
+export function extract_one_file_medias(data: Uint8Array, is_decode: boolean): any;
 
-export function extract_one_file_variable_names(data: Uint8Array, is_decode: boolean): Promise<string[]>;
+export function extract_one_file_variable_names(data: Uint8Array, is_decode: boolean): string[];
 
-export function extract_variable_names(files: Uint8Array[], encode_files: Uint8Array[]): Promise<string[]>;
+export function extract_variable_names(files: Uint8Array[], encode_files: Uint8Array[]): string[];
 
 export function file_encrypt(file: Uint8Array): Uint8Array;
 
@@ -19,37 +19,34 @@ export function files_encrypt(files: Uint8Array[]): Uint8Array[];
 
 export function main(): void;
 
-export function replace(params: any, medias: Uint8Array[]): Promise<Uint8Array[]>;
+export function replace(params: any, medias: Uint8Array[]): Uint8Array[];
 
-export function replace_batch(params: any, medias: Uint8Array[], files: Uint8Array[], encode_files: Uint8Array[]): Promise<Uint8Array[]>;
+export function replace_batch(params: any, medias: Uint8Array[], files: Uint8Array[], encode_files: Uint8Array[]): Uint8Array[];
 
-export function replace_batch_multiple_params(params: any, medias: Uint8Array[], files: Uint8Array[], encode_files: Uint8Array[]): Promise<Uint8Array[]>;
+export function replace_batch_multiple_params(params: any, medias: Uint8Array[], files: Uint8Array[], encode_files: Uint8Array[]): Uint8Array[];
 
-export function replace_item(variables: any, medias: Uint8Array[], file: Uint8Array, is_decode: boolean): Promise<Uint8Array>;
+export function replace_item(variables: any, medias: Uint8Array[], file: Uint8Array, is_decode: boolean): Uint8Array;
 
-export function replace_multiple_params(params: any, medias: Uint8Array[]): Promise<Uint8Array[]>;
+export function replace_multiple_params(params: any, medias: Uint8Array[]): Uint8Array[];
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly add_media: (a: any) => [number, number];
-  readonly add_template: (a: any, b: number) => any;
+  readonly add_template: (a: any, b: number) => number;
   readonly extract_medias: (a: number, b: number, c: number, d: number) => any;
   readonly extract_one_file_medias: (a: any, b: number) => any;
-  readonly extract_one_file_variable_names: (a: any, b: number) => any;
-  readonly extract_variable_names: (a: number, b: number, c: number, d: number) => any;
+  readonly extract_one_file_variable_names: (a: any, b: number) => [number, number];
+  readonly extract_variable_names: (a: number, b: number, c: number, d: number) => [number, number];
   readonly file_encrypt: (a: any) => [number, number];
   readonly files_encrypt: (a: number, b: number) => [number, number];
   readonly main: () => void;
-  readonly replace: (a: any, b: number, c: number) => any;
-  readonly replace_batch: (a: any, b: number, c: number, d: number, e: number, f: number, g: number) => any;
-  readonly replace_batch_multiple_params: (a: any, b: number, c: number, d: number, e: number, f: number, g: number) => any;
-  readonly replace_item: (a: any, b: number, c: number, d: any, e: number) => any;
-  readonly replace_multiple_params: (a: any, b: number, c: number) => any;
-  readonly wasm_bindgen__convert__closures_____invoke__hc67b5f1167623913: (a: number, b: number, c: any) => void;
-  readonly wasm_bindgen__closure__destroy__hb0c28b168af5f93f: (a: number, b: number) => void;
-  readonly wasm_bindgen__convert__closures_____invoke__h180f14b7918b59ca: (a: number, b: number, c: any, d: any) => void;
+  readonly replace: (a: any, b: number, c: number) => [number, number];
+  readonly replace_batch: (a: any, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
+  readonly replace_batch_multiple_params: (a: any, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
+  readonly replace_item: (a: any, b: number, c: number, d: any, e: number) => [number, number];
+  readonly replace_multiple_params: (a: any, b: number, c: number) => [number, number];
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;

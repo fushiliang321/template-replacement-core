@@ -5,7 +5,6 @@ use common::office::zip::{new as new_zip, Zip};
 use common::replace::data::Data;
 use common::replace::data::Value::Text;
 use common::replace::index::{File, Replace};
-use futures::future::join_all;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Error, ErrorKind};
@@ -15,15 +14,15 @@ const TYPE_WORD: u8 = 0;
 const TYPE_EXCEL: u8 = 1;
 
 
-async fn new_office(file: Vec<u8>) -> Result<Zip, Error> {
-    match new_zip(file).await {
+fn new_office(file: Vec<u8>) -> Result<Zip, Error> {
+    match new_zip(file) {
         Ok(zip) => Ok(zip),
         Err(err) => Err(Error::new(ErrorKind::Other, "")),
     }
 }
 
-async fn vec_to_file(file: Vec<u8>) -> File {
-    match new_office(file.clone()).await {
+fn vec_to_file(file: Vec<u8>) -> File {
+    match new_office(file.clone()) {
         Ok(zip) => {
             File::Zip(zip)
         }
@@ -38,10 +37,10 @@ struct FileList {
     data: Vec<File>,
 }
 
-async fn read_dir(path: &str) -> FileList {
+fn read_dir(path: &str) -> FileList {
     let dirs = fs::read_dir(path).unwrap();
 
-    let mut tasks = vec![];
+    let mut result = vec![];
     let mut list = FileList {
         names: vec![],
         data: vec![],
@@ -60,12 +59,11 @@ async fn read_dir(path: &str) -> FileList {
                 .map(|name| name).unwrap();
             println!("{}", name);
             list.names.push(name.to_string());
-            tasks.push(vec_to_file(data));
+            result.push(vec_to_file(data));
         }
     });
 
-    let res = join_all(tasks).await;
-    res.into_iter().for_each(|file| {
+    result.into_iter().for_each(|file| {
         list.data.push(file);
     });
     list
@@ -83,9 +81,9 @@ async fn replace() {
         media: Some(HashMap::from([])),
     };
 
-    let mut list = read_dir("D:\\其他\\test").await;
+    let mut list = read_dir("D:\\其他\\test");
     // let mut list = read_dir("D:\\其他\\A 人权生成模板2022简").await;
-    let mut execute_results = Replace::new(list.data, variables).execute().await;
+    let mut execute_results = Replace::new(list.data, variables).execute();
     println!("{:?}", start.elapsed());
     while let Some(result) = execute_results.pop() {
         let name = list.names.pop().unwrap();
@@ -129,7 +127,7 @@ async fn replace_params() {
         }
     ];
 
-    let mut list = read_dir("D:\\其他\\test").await;
+    let mut list = read_dir("D:\\其他\\test");
     // let mut list = read_dir("D:\\其他\\A 人权生成模板2022简").await;
     let medias = vec![];
 
@@ -141,7 +139,7 @@ async fn replace_params() {
     for variable in variables {
         let variable_data = variable.to_data(&medias);
         replace_task.set_data(variable_data);
-        let execute_results = replace_task.execute().await;
+        let execute_results = replace_task.execute();
         for execute_result in execute_results.iter() {
             let execute_result_vec = (&**execute_result).to_vec();
             result.push(execute_result_vec);
@@ -158,11 +156,11 @@ async fn replace_params() {
 
 #[async_std::test]
 async fn extract() {
-    let mut list = read_dir("D:\\其他\\test").await;
+    let mut list = read_dir("D:\\其他\\test");
     if let Some(file) = list.data.pop() {
         match file {
-            File::Zip(zip) => {
-                println!("{:?}", zip.extract_variable_names().await);
+            File::Zip(mut zip) => {
+                println!("{:?}", zip.extract_variable_names());
             }
             _ => {}
         }
@@ -170,11 +168,11 @@ async fn extract() {
 }
 #[async_std::test]
 async fn extract_medias() {
-    let mut list = read_dir("D:\\其他\\test").await;
+    let mut list = read_dir("D:\\其他\\test");
     if let Some(file) = list.data.pop() {
         match file {
-            File::Zip(zip) => {
-                println!("{:?}", zip.get_medias().await);
+            File::Zip(mut zip) => {
+                println!("{:?}", zip.get_medias());
             }
             _ => {}
         }
@@ -221,7 +219,6 @@ async fn file_decode_test() {
 
             let res = file_decode(data);
 
-
             // let runtime = tokio::runtime::Builder::new_current_thread()
             //     .worker_threads(4) // 设置工作线程数（可选）
             //     .enable_all()       // 启用所有功能（I/O、时间等）
@@ -235,7 +232,6 @@ async fn file_decode_test() {
             //         println!("{},error", name)
             //     }
             // });
-
 
             fs::write("./out/de/".to_owned() + &*name, res).expect("TODO: panic message");
         }

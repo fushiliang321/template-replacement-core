@@ -3,15 +3,15 @@
 
 export function add_media(file: Uint8Array): string;
 
-export function add_template(file_data: Uint8Array, is_decode: boolean): Promise<number>;
+export function add_template(file_data: Uint8Array, is_decode: boolean): number;
 
-export function extract_medias(files: Uint8Array[], encode_files: Uint8Array[]): Promise<any>;
+export function extract_medias(files: Uint8Array[], encode_files: Uint8Array[]): any;
 
-export function extract_one_file_medias(data: Uint8Array, is_decode: boolean): Promise<any>;
+export function extract_one_file_medias(data: Uint8Array, is_decode: boolean): any;
 
-export function extract_one_file_variable_names(data: Uint8Array, is_decode: boolean): Promise<string[]>;
+export function extract_one_file_variable_names(data: Uint8Array, is_decode: boolean): string[];
 
-export function extract_variable_names(files: Uint8Array[], encode_files: Uint8Array[]): Promise<string[]>;
+export function extract_variable_names(files: Uint8Array[], encode_files: Uint8Array[]): string[];
 
 export function file_encrypt(file: Uint8Array): Uint8Array;
 
@@ -19,9 +19,9 @@ export function files_encrypt(files: Uint8Array[]): Uint8Array[];
 
 export function main(): void;
 
-export function replace_batch(verify_code: string, params_data: string): Promise<Uint8Array[]>;
+export function replace_batch(verify_code: string, params_data: string): Uint8Array[];
 
-export function replace_batch_multiple_params(verify_code: string, params_data: string): Promise<Uint8Array[]>;
+export function replace_batch_multiple_params(verify_code: string, params_data: string): Uint8Array[];
 
 export function replace_params_encode(params: any): any;
 
@@ -32,21 +32,18 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly add_media: (a: any) => [number, number];
-  readonly add_template: (a: any, b: number) => any;
+  readonly add_template: (a: any, b: number) => number;
   readonly extract_medias: (a: number, b: number, c: number, d: number) => any;
   readonly extract_one_file_medias: (a: any, b: number) => any;
-  readonly extract_one_file_variable_names: (a: any, b: number) => any;
-  readonly extract_variable_names: (a: number, b: number, c: number, d: number) => any;
+  readonly extract_one_file_variable_names: (a: any, b: number) => [number, number];
+  readonly extract_variable_names: (a: number, b: number, c: number, d: number) => [number, number];
   readonly file_encrypt: (a: any) => [number, number];
   readonly files_encrypt: (a: number, b: number) => [number, number];
   readonly main: () => void;
-  readonly replace_batch: (a: number, b: number, c: number, d: number) => any;
-  readonly replace_batch_multiple_params: (a: number, b: number, c: number, d: number) => any;
+  readonly replace_batch: (a: number, b: number, c: number, d: number) => [number, number];
+  readonly replace_batch_multiple_params: (a: number, b: number, c: number, d: number) => [number, number];
   readonly replace_params_encode: (a: any) => any;
   readonly replace_params_encode_multiple_params: (a: any) => any;
-  readonly wasm_bindgen__convert__closures_____invoke__hc67b5f1167623913: (a: number, b: number, c: any) => void;
-  readonly wasm_bindgen__closure__destroy__hb0c28b168af5f93f: (a: number, b: number) => void;
-  readonly wasm_bindgen__convert__closures_____invoke__h180f14b7918b59ca: (a: number, b: number, c: any, d: any) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;

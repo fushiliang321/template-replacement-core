@@ -3,7 +3,6 @@ use crate::office::zip::{RelationshipInfo, Zip};
 use crate::replace::data::Value::{Image, Text};
 use crate::replace::data::{Data, Value};
 use crate::replace::thread::Thread;
-use futures::future::join_all;
 use std::collections::{HashMap, VecDeque};
 use std::str::from_utf8;
 use std::sync::{Arc, Mutex};
@@ -77,9 +76,9 @@ fn replace_content(
     Some(ReplaceContentResult { content, medias })
 }
 
-pub async fn replace_lock(office_mutex: Arc<Mutex<Zip>>, data: Arc<Data>) -> Box<[u8]> {
+pub fn replace_lock(office_mutex: Arc<Mutex<Zip>>, data: Arc<Data>) -> Box<[u8]> {
     let mut office = office_mutex.lock().unwrap();
-    if let Some(files) = office.match_document_contents().await {
+    if let Some(files) = office.match_document_contents() {
         if let Some(text) = &data.text {
             for (file_name, file_data) in files {
                 //提取出原始变量
@@ -91,7 +90,7 @@ pub async fn replace_lock(office_mutex: Arc<Mutex<Zip>>, data: Arc<Data>) -> Box
             }
         }
     }
-    office.finish().await
+    office.finish()
 }
 
 fn get_filename(path: &str) -> Option<&str> {
@@ -101,12 +100,12 @@ fn get_filename(path: &str) -> Option<&str> {
     }
 }
 
-pub async fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
+pub fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
     match file {
         File::Zip(office) => {
             if let Some(text) = &data.text &&
                 !text.is_empty() &&
-                let Some(files) = office.match_document_contents().await {
+                let Some(files) = office.match_document_contents() {
                 for (file_name, file_data) in files {
                     //提取出原始变量
                     if let Ok(content) = from_utf8(&file_data) {
@@ -134,7 +133,7 @@ pub async fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
 
             if let Some(medias) = &data.media &&
                 !medias.is_empty() &&
-                let Some(office_medias) = office.get_media_names().await {
+                let Some(office_medias) = office.get_media_names() {
                 for (key, name) in office_medias {
                     if let Some(file) = medias.get(&key) {
                         match file {
@@ -147,7 +146,7 @@ pub async fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
                 }
             }
 
-            office.finish().await
+            office.finish()
         }
         File::Result(file) => {
             file.to_vec().into_boxed_slice()
@@ -184,15 +183,15 @@ impl Replace {
         thread.over(ids)
     }
 
-    async fn vec_to_box(v: &mut Vec<u8>) -> Box<[u8]> {
+    fn vec_to_box(v: &mut Vec<u8>) -> Box<[u8]> {
         v.to_vec().into_boxed_slice()
     }
 
-    pub async fn execute(&mut self) -> Vec<Box<[u8]>> {
-        let mut tasks: Vec<_> = vec![];
+    pub fn execute(&mut self) -> Vec<Box<[u8]>> {
+        let mut result: Vec<_> = vec![];
         for file in self.files.iter_mut() {
-            tasks.push(replace(file, &self.data));
+            result.push(replace(file, &self.data));
         }
-        join_all(tasks).await
+        result
     }
 }

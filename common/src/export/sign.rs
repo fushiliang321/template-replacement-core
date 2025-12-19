@@ -17,21 +17,21 @@ pub(crate) struct AddReplaceParamsResult {
 
 //批量替换并验证参数
 #[wasm_bindgen]
-pub async fn replace_batch(verify_code: &str, params_data: &str) -> Vec<Uint8Array> {
+pub fn replace_batch(verify_code: &str, params_data: &str) -> Vec<Uint8Array> {
     if let Some(params) = params_decode::<ReplaceParams>(verify_code, params_data) {
         let files = params.get_files();
         let variables = params.get_variables(&vec![]);
-        return replace_execute(variables, files).await;
+        return replace_execute(variables, files);
     }
     vec![]
 }
 
 //批量替换并验证参数（多套参数）
 #[wasm_bindgen]
-pub async fn replace_batch_multiple_params(verify_code: &str, params_data: &str) -> Vec<Uint8Array> {
+pub fn replace_batch_multiple_params(verify_code: &str, params_data: &str) -> Vec<Uint8Array> {
     if let Some(params) = params_decode::<BatchReplaceParams>(verify_code, params_data) {
         let files = params.get_files();
-        return replace_execute_multiple_params(params.variables, &vec![], files).await;
+        return replace_execute_multiple_params(params.variables, &vec![], files);
     }
     vec![]
 }

@@ -1,12 +1,10 @@
 use crate::export::common::VariableValue::{Image, Text};
 use crate::export::encrypt::file_decode;
-use crate::office::zip::Error::NotSupported;
 use crate::replace::data::{encode, Data, Value};
 use crate::replace::image::{generate_id, Extent, TextWrapType};
 use crate::replace::index::{File, Replace};
 use crate::version;
 use flate2::Crc;
-use futures::future::join_all;
 use js_sys::Uint8Array;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -131,9 +129,9 @@ impl VariablesTrait for Variables {
 
 //添加模板文件
 #[wasm_bindgen]
-pub async fn add_template(file_data: Uint8Array, is_decode: bool) -> u32 {
+pub fn add_template(file_data: Uint8Array, is_decode: bool) -> u32 {
     let mut len = file_data.length();
-    let file = uint8array_to_replace_file(file_data, is_decode).await;
+    let file = uint8array_to_replace_file(file_data, is_decode);
     let mut index = INDEX.lock().unwrap();
     let mut files = FILES.lock().unwrap();
     if len > 0 {
@@ -156,42 +154,37 @@ pub fn add_media(file: Uint8Array) -> String {
 }
 
 //文件uint8array转模板文件对象
-pub(crate) async fn uint8array_to_replace_file(file: Uint8Array, is_decode: bool) -> File {
+pub(crate) fn uint8array_to_replace_file(file: Uint8Array, is_decode: bool) -> File {
     let mut data = file.to_vec();
     if is_decode {
         data = file_decode(data);
     }
-    match crate::office::zip::new(data).await {
+    match crate::office::zip::new(data) {
         Ok(zip) => File::Zip(zip),
-        Err(err) => match err {
-            NotSupported(data) => {
-                File::Result(data)
+        Err(_) => {
+            let mut data = file.to_vec();
+            if is_decode {
+                data = file_decode(data);
             }
-            _ => {
-                let mut data = file.to_vec();
-                if is_decode {
-                    data = file_decode(data);
-                }
-                File::Result(data)
-            }
+            File::Result(data)
         }
     }
 }
 
 //批量文件uint8array转模板文件对象
-pub(crate) async fn batch_uint8array_to_replace_file(files: Vec<Uint8Array>, encode_files: Vec<Uint8Array>) -> Vec<File> {
-    let mut tasks = vec![];
+pub(crate) fn batch_uint8array_to_replace_file(files: Vec<Uint8Array>, encode_files: Vec<Uint8Array>) -> Vec<File> {
+    let mut result = vec![];
     for file in files {
-        tasks.push(uint8array_to_replace_file(file, false));
+        result.push(uint8array_to_replace_file(file, false));
     }
     for file in encode_files {
-        tasks.push(uint8array_to_replace_file(file, true));
+        result.push(uint8array_to_replace_file(file, true));
     }
-    join_all(tasks).await
+    result
 }
 
 //多套参数批量替换
-pub(crate) async fn replace_execute_multiple_params(variables: Vec<Variables>, medias: &Vec<Uint8Array>, files: Vec<File>) -> Vec<Uint8Array> {
+pub(crate) fn replace_execute_multiple_params(variables: Vec<Variables>, medias: &Vec<Uint8Array>, files: Vec<File>) -> Vec<Uint8Array> {
     let mut replace_task = Replace::new(files, Data {
         text: None,
         media: None,
@@ -200,7 +193,7 @@ pub(crate) async fn replace_execute_multiple_params(variables: Vec<Variables>, m
     for variable in variables {
         let variable_data = variable.to_data(&medias);
         replace_task.set_data(variable_data);
-        let execute_results = replace_task.execute().await;
+        let execute_results = replace_task.execute();
         for execute_result in execute_results {
             let execute_result_vec = execute_result.iter().as_slice();
             let uint8array = Uint8Array::from(execute_result_vec);
@@ -211,8 +204,8 @@ pub(crate) async fn replace_execute_multiple_params(variables: Vec<Variables>, m
 }
 
 //单套参数替换
-pub(crate) async fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Uint8Array> {
-    let execute_results = Replace::new(files, variables).execute().await;
+pub(crate) fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Uint8Array> {
+    let execute_results = Replace::new(files, variables).execute();
     let mut result = vec![];
     for execute_result in execute_results {
         let execute_result_vec = execute_result.iter().as_slice();

@@ -228,7 +228,7 @@ dependencies = [
 
 [[package]]
 name = "common"
-version = "1.7.3"
+version = "1.8.0"
 dependencies = [
  "aes",
  "async-std",
@@ -790,14 +790,14 @@ dependencies = [
 
 [[package]]
 name = "template-replacement-core-wasm"
-version = "1.7.3"
+version = "1.8.0"
 dependencies = [
  "common",
 ]
 
 [[package]]
 name = "template-replacement-sign-core-wasm"
-version = "1.7.3"
+version = "1.8.0"
 dependencies = [
  "common",
 ]

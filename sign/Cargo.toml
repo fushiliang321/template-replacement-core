@@ -1,6 +1,6 @@
 [package]
 name = "template-replacement-sign-core-wasm"
-version = "1.7.3"
+version = "1.8.0"
 edition = "2024"
 description = "模板替换核心wasm库（签名版）"
 license = "Apache 2.0"

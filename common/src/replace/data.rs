@@ -55,14 +55,14 @@ pub fn decode(input: &str) -> String {
     }).to_string()
 }
 
-fn new() -> Data {
-    Data {
-        text: None,
-        media: None,
-    }
-}
-
 impl Data {
+    pub fn new() -> Self {
+        Data {
+            text: None,
+            media: None,
+        }
+    }
+
     // 判断是否为空参数
     pub fn is_empty(&self) -> bool {
         if self.text.is_some() && !self.text.as_ref().unwrap().is_empty() {

@@ -99,10 +99,7 @@ pub trait VariablesTrait {
 
 impl VariablesTrait for Variables {
     fn to_data(&self, medias: &Vec<Uint8Array>) -> Data {
-        let mut data = Data {
-            text: None,
-            media: None,
-        };
+        let mut data = Data::new();
 
         if !self.text.is_empty() {
             let mut text_data = HashMap::new();
@@ -185,18 +182,14 @@ pub(crate) fn batch_uint8array_to_replace_file(files: Vec<Uint8Array>, encode_fi
 
 //多套参数批量替换
 pub(crate) fn replace_execute_multiple_params(variables: Vec<Variables>, medias: &Vec<Uint8Array>, files: Vec<File>) -> Vec<Uint8Array> {
-    let mut replace_task = Replace::new(files, Data {
-        text: None,
-        media: None,
-    });
+    let mut replace_task = Replace::new(files, Data::new());
     let mut result = vec![];
     for variable in variables {
         let variable_data = variable.to_data(&medias);
         replace_task.set_data(variable_data);
         let execute_results = replace_task.execute();
         for execute_result in execute_results {
-            let execute_result_vec = execute_result.iter().as_slice();
-            let uint8array = Uint8Array::from(execute_result_vec);
+            let uint8array = Uint8Array::from(execute_result.as_slice());
             result.push(uint8array);
         }
     }
@@ -208,8 +201,7 @@ pub(crate) fn replace_execute(variables: Data, files: Vec<File>) -> Vec<Uint8Arr
     let execute_results = Replace::new(files, variables).execute();
     let mut result = vec![];
     for execute_result in execute_results {
-        let execute_result_vec = execute_result.iter().as_slice();
-        let uint8array = Uint8Array::from(execute_result_vec);
+        let uint8array = Uint8Array::from(execute_result.as_slice());
         result.push(uint8array);
     }
     result
@@ -225,7 +217,7 @@ fn media_to_image(value: &Media, medias: &Vec<Uint8Array>) -> Option<Value> {
             };
             return Some(Value::Image(crate::replace::image::new(
                 value.id.clone(),
-                file.clone().into_boxed_slice(),
+                file.clone(),
                 value.suffix.clone(),
                 value.text_wrap.clone(),
                 wp_extent,
@@ -241,7 +233,7 @@ fn media_to_image(value: &Media, medias: &Vec<Uint8Array>) -> Option<Value> {
         };
         return Some(Value::Image(crate::replace::image::new(
             id,
-            file.into_boxed_slice(),
+            file,
             value.suffix.clone(),
             value.text_wrap.clone(),
             wp_extent,

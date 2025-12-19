@@ -19,9 +19,7 @@ pub fn extract_one_file_variable_names(data: Uint8Array, is_decode: bool) -> Vec
         file = file_decode(file);
     }
     if let Ok(mut office) = crate::office::zip::new(file) {
-        if let Some(vec) = office.extract_variable_names() {
-            return vec;
-        }
+        return office.extract_variable_names();
     }
     vec![]
 }
@@ -103,10 +101,9 @@ pub fn extract_medias(files: Vec<Uint8Array>, encode_files: Vec<Uint8Array>) -> 
 fn _extract_one_file_medias(data: Vec<u8>) -> HashMap<String, Vec<u8>> {
     let mut map = HashMap::new();
     if let Ok(mut office) = crate::office::zip::new(data) {
-        if let Some(media_map) = office.get_medias() {
-            for (k, (_, data)) in media_map {
-                map.insert(k, data.to_vec());
-            }
+        let media_map = office.get_medias();
+        for (k, (_, data)) in media_map {
+            map.insert(k, data.to_vec());
         }
     }
     map

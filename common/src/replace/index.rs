@@ -1,11 +1,10 @@
-use crate::extract::index::{out_tag, raw_variables, TEMP_EXCLUDE_REG_EXP, TEMP_FIELD_REG_EXP};
+use crate::extract::index::{out_tag, TEMP_EXCLUDE_REG_EXP, TEMP_FIELD_REG_EXP};
 use crate::office::zip::{RelationshipInfo, Zip};
 use crate::replace::data::Value::{Image, Text};
 use crate::replace::data::{Data, Value};
-use crate::replace::thread::Thread;
 use std::collections::{HashMap, VecDeque};
 use std::str::from_utf8;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 
 pub enum File {
@@ -18,26 +17,8 @@ pub struct Replace {
     data: Arc<Data>,
 }
 
-// 提取变量
-fn extract_variables(content: &str) -> HashMap<&str, String> {
-    let mut variables: HashMap<&str, String> = HashMap::new();
-    if content.eq("") {
-        return variables;
-    }
-    //提取出原始变量
-    let raw_vars = raw_variables(content);
-    if raw_vars.is_empty() {
-        return variables;
-    }
-    for raw_var in raw_vars {
-        let var_name = out_tag(raw_var);
-        variables.insert(raw_var, var_name);
-    }
-    variables
-}
-
 struct ReplaceContentResult {
-    content: Box<[u8]>,
+    content: Vec<u8>,
     medias: HashMap<String, Box<crate::replace::image::Image>>,
 }
 
@@ -67,8 +48,7 @@ fn replace_content(
             str.to_string()
         })
         .as_bytes()
-        .to_vec()
-        .into_boxed_slice();
+        .to_vec();
 
     if !is_change {
         return None;
@@ -76,71 +56,43 @@ fn replace_content(
     Some(ReplaceContentResult { content, medias })
 }
 
-pub fn replace_lock(office_mutex: Arc<Mutex<Zip>>, data: Arc<Data>) -> Box<[u8]> {
-    let mut office = office_mutex.lock().unwrap();
-    if let Some(files) = office.match_document_contents() {
-        if let Some(text) = &data.text {
-            for (file_name, file_data) in files {
-                //提取出原始变量
-                if let Ok(content) = from_utf8(&file_data) {
-                    if let Some(replace_content_result) = replace_content(content, text) {
-                        office.write_file(&file_name, replace_content_result.content);
-                    }
-                }
-            }
-        }
-    }
-    office.finish()
-}
-
-fn get_filename(path: &str) -> Option<&str> {
-    match path.rfind('/') {
-        Some(index) => Some(&path[index + 1..]),
-        None => if path.is_empty() { None } else { Some(path) },
-    }
-}
-
-pub fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
+pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
     match file {
         File::Zip(office) => {
             if let Some(text) = &data.text &&
-                !text.is_empty() &&
-                let Some(files) = office.match_document_contents() {
+                !text.is_empty() {
+                let files = office.match_document_contents();
                 for (file_name, file_data) in files {
                     //提取出原始变量
-                    if let Ok(content) = from_utf8(&file_data) {
-                        if let Some(replace_content_result) = replace_content(content, text) {
-                            office.write_file(&file_name.to_string(), replace_content_result.content);
-                            if replace_content_result.medias.is_empty() {
-                                continue;
-                            }
-                            let mut relationships = vec![];
-                            let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
-                            for (key, file) in replace_content_result.medias {
-                                let name = format!("{}media/{}", office.office().root_dir(), key);
-                                office.write_media(name, file.file);
-                                relationships.push(RelationshipInfo {
-                                    id: key.clone(),
-                                    target: key,
-                                    _type: String::from(file.relationship),
-                                });
-                            }
-                            office.write_relationships(name, relationships);
+                    if let Ok(content) = from_utf8(&file_data) &&
+                        let Some(replace_content_result) = replace_content(content, text) {
+                        office.write_file(&file_name.to_string(), replace_content_result.content);
+                        if replace_content_result.medias.is_empty() {
+                            continue;
                         }
+                        let mut relationships = vec![];
+                        let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
+                        for (key, file) in replace_content_result.medias {
+                            let name = format!("{}media/{}", office.office().root_dir(), key);
+                            office.write_media(name, file.file);
+                            relationships.push(RelationshipInfo {
+                                id: key.clone(),
+                                target: key,
+                                _type: String::from(file.relationship),
+                            });
+                        }
+                        office.write_relationships(name, relationships);
                     }
                 }
             }
 
             if let Some(medias) = &data.media &&
-                !medias.is_empty() &&
-                let Some(office_medias) = office.get_media_names() {
+                !medias.is_empty() {
+                let office_medias = office.get_media_names();
                 for (key, name) in office_medias {
                     if let Some(file) = medias.get(&key) {
-                        match file {
-                            Text(_) => {}
-                            Image(file) => {
-                                office.write_media(name, file.file.clone());
-                            }
+                        if let Image(file) = file {
+                            office.write_media(name, file.file.clone());
                         }
                     }
                 }
@@ -149,7 +101,7 @@ pub fn replace(file: &mut File, data: &Data) -> Box<[u8]> {
             office.finish()
         }
         File::Result(file) => {
-            file.to_vec().into_boxed_slice()
+            file.to_vec()
         }
     }
 }
@@ -166,28 +118,7 @@ impl Replace {
         self.data = Arc::new(data)
     }
 
-    pub fn execute_thread(&mut self, mut concurrency: u8) -> Vec<Box<[u8]>> {
-        if self.data.is_empty() {
-            return Vec::new();
-        }
-        if concurrency < 1 {
-            concurrency = 1;
-        }
-        let mut thread = Thread::new(concurrency, Arc::clone(&self.data));
-        let mut ids = Vec::new();
-        while let Some(office) = self.files.pop_front() {
-            let office = Arc::new(Mutex::new(office));
-            let id = thread.add(office);
-            ids.push(id);
-        }
-        thread.over(ids)
-    }
-
-    fn vec_to_box(v: &mut Vec<u8>) -> Box<[u8]> {
-        v.to_vec().into_boxed_slice()
-    }
-
-    pub fn execute(&mut self) -> Vec<Box<[u8]>> {
+    pub fn execute(&mut self) -> Vec<Vec<u8>> {
         let mut result: Vec<_> = vec![];
         for file in self.files.iter_mut() {
             result.push(replace(file, &self.data));

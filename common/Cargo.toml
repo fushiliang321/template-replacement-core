@@ -4,10 +4,9 @@ version = "1.8.0"
 edition = "2024"
 
 [dependencies]
-crossbeam-channel = "0.5.14"
 regex = "1.11.1"
 wasm-bindgen = { version = "0.2.99" }
-zip = { version = "6.0.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zip = { version = "7.0.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 console_log = "1.0.0"
 log = "0.4.22"
 console_error_panic_hook = "0.1.7"

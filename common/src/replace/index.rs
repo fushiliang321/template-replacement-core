@@ -3,8 +3,8 @@ use crate::office::zip::{RelationshipInfo, Zip};
 use crate::replace::data::Value::{Image, Text};
 use crate::replace::data::{Data, Value};
 use std::collections::{HashMap, VecDeque};
+use std::rc::Rc;
 use std::str::from_utf8;
-use std::sync::Arc;
 
 
 pub enum File {
@@ -14,7 +14,7 @@ pub enum File {
 
 pub struct Replace {
     files: VecDeque<File>,
-    data: Arc<Data>,
+    data: Rc<Data>,
 }
 
 struct ReplaceContentResult {
@@ -110,12 +110,12 @@ impl Replace {
     pub fn new(files: Vec<File>, data: Data) -> Replace {
         Replace {
             files: VecDeque::from(files),
-            data: Arc::new(data),
+            data: Rc::new(data),
         }
     }
 
     pub fn set_data(&mut self, data: Data) {
-        self.data = Arc::new(data)
+        self.data = Rc::new(data)
     }
 
     pub fn execute(&mut self) -> Vec<Vec<u8>> {

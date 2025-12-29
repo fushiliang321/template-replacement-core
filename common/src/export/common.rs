@@ -125,11 +125,11 @@ impl VariablesTrait for Variables {
 pub fn add_template(file_data: Uint8Array, is_decode: bool) -> u32 {
     let mut len = file_data.length();
     let file = uint8array_to_replace_file(file_data, is_decode);
-    let mut index = INDEX.lock().unwrap();
-    let mut files = FILES.lock().unwrap();
     if len > 0 {
         len = len % 100;
     }
+    let mut index = INDEX.lock().unwrap();
+    let mut files = FILES.lock().unwrap();
     //非固定长度递增，避免不同文件签名的结果被碰撞
     *index += len + 1;
     files.insert(*index, file);

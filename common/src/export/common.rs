@@ -6,18 +6,14 @@ use crate::replace::index::{File, Replace};
 use crate::version;
 use flate2::Crc;
 use js_sys::Uint8Array;
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-lazy_static! {
-    static ref INDEX: Mutex<u32> = Mutex::new(index_init());
-    static ref FILES: Mutex<HashMap<u32, File>> = Mutex::new(Default::default());
-    static ref MEDIA_FILES: Mutex<HashMap<String, Vec<u8>>> = Mutex::new(Default::default());
-}
-
+static INDEX: LazyLock<Mutex<u32>> = LazyLock::new(|| Mutex::new(index_init()));
+static FILES: LazyLock<Mutex<HashMap<u32, File>>> = LazyLock::new(|| Mutex::new(Default::default()));
+static MEDIA_FILES: LazyLock<Mutex<HashMap<String, Vec<u8>>>> = LazyLock::new(|| Mutex::new(Default::default()));
 
 #[derive(Serialize, Deserialize)]
 struct WpExtent {

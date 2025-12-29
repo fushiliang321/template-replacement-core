@@ -1,8 +1,8 @@
 use crate::office::office::Office;
-use once_cell::sync::Lazy;
 use regex::Regex;
+use std::sync::LazyLock;
 
-static DOCUMENT_FILE_REG_EXP: Lazy<Regex> = Lazy::new(|| {
+static DOCUMENT_FILE_REG_EXP: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^word/(document|footer|header|diagrams/data|diagrams/drawing)(\d*).xml").unwrap()
 });
 

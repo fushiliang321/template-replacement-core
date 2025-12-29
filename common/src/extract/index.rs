@@ -1,13 +1,13 @@
-use once_cell::sync::Lazy;
 use regex::Regex;
+use std::sync::LazyLock;
 
-pub static TEMP_FIELD_REG_EXP: Lazy<Regex> = Lazy::new(|| {
+pub static TEMP_FIELD_REG_EXP: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\$((<[^<>{}$]*?>)|\s)*\{([^{}$]+)}").unwrap()
 });
-pub static TEMP_EXCLUDE_REG_EXP: Lazy<Regex> = Lazy::new(|| {
+pub static TEMP_EXCLUDE_REG_EXP: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)<(/|)w:(p|drawing|tc|tbl)>").unwrap()
 });
-pub static OUT_TAG_REG_EXP: Lazy<Regex> = Lazy::new(|| {
+pub static OUT_TAG_REG_EXP: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"<.*?>|\s+").unwrap()
 });
 

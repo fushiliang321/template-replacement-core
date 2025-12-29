@@ -2,11 +2,11 @@ use crate::version;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use flate2::Crc;
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 use rmp_serde::decode::Error;
 use serde::{Deserialize, Serialize};
 
-static SALT: OnceCell<String> = OnceCell::new();
+static SALT: OnceLock<String> = OnceLock::new();
 
 // 需要返回盐值："351100ce837185309180455d7a54855d"
 // 盐生成方式：md5("zct 1.0.0")

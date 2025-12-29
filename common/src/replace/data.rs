@@ -1,7 +1,7 @@
 use crate::replace::image::Image;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 pub enum Value {
     Text(String),
@@ -16,7 +16,7 @@ pub struct DataBase<T> {
 pub type Data = DataBase<Value>;
 
 //特殊字符编码
-static CHARACTER_ENCODER_MAP: Lazy<HashMap<char, &str>> = Lazy::new(|| {
+static CHARACTER_ENCODER_MAP: LazyLock<HashMap<char, &str>> = LazyLock::new(|| {
     HashMap::from([
         ('<', "&lt;"),
         ('>', "&gt;"),
@@ -27,7 +27,7 @@ static CHARACTER_ENCODER_MAP: Lazy<HashMap<char, &str>> = Lazy::new(|| {
 });
 
 //特殊字符解码
-static CHARACTER_DECODER_MAP: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
+static CHARACTER_DECODER_MAP: LazyLock<HashMap<&str, &str>> = LazyLock::new(|| {
     HashMap::from([
         ("lt", "<"),
         ("gt", ">"),
@@ -37,7 +37,7 @@ static CHARACTER_DECODER_MAP: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     ])
 });
 
-static DOCUMENT_FILE_REG_EXP: Lazy<Regex> = Lazy::new(|| {
+static DOCUMENT_FILE_REG_EXP: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)&(lt|gt|apos|amp|quot);").unwrap()
 });
 

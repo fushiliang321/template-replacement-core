@@ -1,15 +1,15 @@
 use aes::cipher::KeyIvInit;
 use cipher::StreamCipher;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 type Aes128OfbEnc = ofb::Ofb<aes::Aes128>;
 type Aes128OfbDec = ofb::Ofb<aes::Aes128>;
 
-static AES_KEY: Lazy<Vec<u8>> = Lazy::new(|| {
+static AES_KEY: LazyLock<Vec<u8>> = LazyLock::new(|| {
     //md5('zct_ase_encrypt_key') 16
     "b65641dcca2071d1".as_bytes().to_vec()
 });
-static AES_IV: Lazy<Vec<u8>> = Lazy::new(|| {
+static AES_IV: LazyLock<Vec<u8>> = LazyLock::new(|| {
     //md5('zct_ase_encrypt_iv') 16
     "0ad4948248175fff".as_bytes().to_vec()
 });

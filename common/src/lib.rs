@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate console_log;
 pub mod extract;
 pub mod office;
@@ -7,11 +6,10 @@ mod authorization;
 pub mod encrypt;
 pub mod export;
 
-use once_cell::sync::OnceCell;
-use wasm_bindgen::prelude::*;
+use std::sync::OnceLock;
+use wasm_bindgen::prelude::wasm_bindgen;
 
-static VERSION: OnceCell<&str> = OnceCell::new();
-
+static VERSION: OnceLock<&str> = OnceLock::new();
 // 获取版本号
 pub(crate) fn version() -> &'static str {
     VERSION.get_or_init(|| {

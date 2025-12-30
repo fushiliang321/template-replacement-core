@@ -6,7 +6,6 @@ use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use std::str::from_utf8;
 
-
 pub enum File {
     Zip(Zip),
     Result(Vec<u8>),
@@ -74,24 +73,18 @@ pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
                             continue;
                         }
                         let mut relationships = vec![];
-                        let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
+                        let rel_file_name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
                         for (id, file) in replace_content_result.medias {
-                            let target = {
-                                if file.suffix.is_empty() {
-                                    vec![&id, ".", &file.suffix].join("")
-                                } else {
-                                    id.clone()
-                                }
-                            };
-                            let media_name_str = vec![office.office().root_dir(), "media/", &target];
-                            office.write_file(&media_name_str.join(""), file.file);
+                            let media_name = id.clone() + &*file.suffix;
+                            let full_media_name = vec![office.office().root_dir(), "media/", &media_name].join("");
+                            office.write_file(&full_media_name, file.file);
                             relationships.push(RelationshipInfo {
                                 id,
-                                target,
+                                target: media_name,
                                 _type: file.relationship,
                             });
                         }
-                        office.write_relationships(name, relationships);
+                        office.write_relationships(rel_file_name, relationships);
                     }
                 }
             }

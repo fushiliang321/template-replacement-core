@@ -84,7 +84,7 @@ pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
                                 }
                             };
                             let media_name = format!("{}media/{}", office.office().root_dir(), target);
-                            office.write_media(&media_name, file.file);
+                            office.write_file(&media_name, file.file);
                             relationships.push(RelationshipInfo {
                                 id,
                                 target,
@@ -102,7 +102,7 @@ pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
                 for (key, name) in office_medias {
                     if let Some(file) = medias.get(&key) {
                         if let Image(file) = file {
-                            office.write_media(&name, file.file.clone());
+                            office.write_file(&name, file.file.clone());
                         }
                     }
                 }

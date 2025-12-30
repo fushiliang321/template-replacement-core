@@ -183,11 +183,6 @@ impl Zip {
         self.files.insert(file_name.clone(), file_data);
     }
 
-    //写入媒体文件
-    pub fn write_media(&mut self, file_name: &String, file_data: Box<[u8]>) {
-        self.write_file(file_name, file_data);
-    }
-
     //完成写入
     pub fn finish(&mut self) -> Vec<u8> {
         let mut buffer = Vec::new();

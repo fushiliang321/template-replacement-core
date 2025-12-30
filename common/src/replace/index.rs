@@ -75,13 +75,20 @@ pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
                         }
                         let mut relationships = vec![];
                         let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
-                        for (key, file) in replace_content_result.medias {
-                            let media_name = format!("{}media/{}", office.office().root_dir(), key);
+                        for (id, file) in replace_content_result.medias {
+                            let target = {
+                                if file.suffix.is_empty() {
+                                    format!("{}.{}", id, file.suffix)
+                                } else {
+                                    id.clone()
+                                }
+                            };
+                            let media_name = format!("{}media/{}", office.office().root_dir(), target);
                             office.write_media(&media_name, file.file);
                             relationships.push(RelationshipInfo {
-                                id: key.clone(),
-                                target: key,
-                                _type: String::from(file.relationship),
+                                id,
+                                target,
+                                _type: file.relationship,
                             });
                         }
                         office.write_relationships(name, relationships);

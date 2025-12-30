@@ -12,7 +12,7 @@ use zip::{ZipArchive, ZipWriter};
 pub struct RelationshipInfo {
     pub id: String,
     pub target: String,
-    pub _type: String,
+    pub _type: &'static str,
 }
 
 pub struct Zip {

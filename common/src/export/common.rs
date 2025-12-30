@@ -13,7 +13,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 static INDEX: LazyLock<Mutex<u32>> = LazyLock::new(|| Mutex::new(index_init()));
 static FILES: LazyLock<Mutex<HashMap<u32, File>>> = LazyLock::new(|| Mutex::new(Default::default()));
-static MEDIA_FILES: LazyLock<Mutex<HashMap<String, Vec<u8>>>> = LazyLock::new(|| Mutex::new(Default::default()));
+static MEDIA_FILES: LazyLock<Mutex<HashMap<String, Box<[u8]>>>> = LazyLock::new(|| Mutex::new(Default::default()));
 
 #[derive(Serialize, Deserialize)]
 struct WpExtent {
@@ -142,7 +142,7 @@ pub fn add_media(file: Uint8Array) -> String {
     let file = file.to_vec();
     let id = generate_id(&file);
     let mut media_files = MEDIA_FILES.lock().unwrap();
-    media_files.insert(id.clone(), file);
+    media_files.insert(id.clone(), file.into_boxed_slice());
     id
 }
 
@@ -229,7 +229,7 @@ fn media_to_image(value: &Media, medias: &Vec<Uint8Array>) -> Option<Value> {
         };
         return Some(Value::Image(crate::replace::image::new(
             id,
-            file,
+            file.into_boxed_slice(),
             value.suffix.clone(),
             value.text_wrap.clone(),
             wp_extent,

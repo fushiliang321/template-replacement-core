@@ -14,7 +14,7 @@ pub struct Extent {
 }
 
 pub struct Image {
-    pub file: Vec<u8>,
+    pub file: Box<[u8]>,
     pub relationship: &'static str,
     pub id: String,
     pub suffix: String,
@@ -34,7 +34,7 @@ pub fn generate_id(data: &Vec<u8>) -> String {
 
 pub fn new(
     id: String,
-    file: Vec<u8>,
+    file: Box<[u8]>,
     suffix: String,
     text_wrap: TextWrapType,
     wp_extent: Extent,

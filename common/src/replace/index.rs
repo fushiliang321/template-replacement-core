@@ -18,7 +18,7 @@ pub struct Replace {
 }
 
 struct ReplaceContentResult {
-    content: Vec<u8>,
+    content: Box<[u8]>,
     medias: HashMap<String, Box<crate::replace::image::Image>>,
 }
 
@@ -28,7 +28,7 @@ fn replace_content(
 ) -> Option<ReplaceContentResult> {
     let mut medias: HashMap<String, Box<crate::replace::image::Image>> = HashMap::new();
     let mut is_change = false;
-    let content = TEMP_FIELD_REG_EXP
+    let cow = TEMP_FIELD_REG_EXP
         .replace_all(input, |caps: &regex::Captures| {
             let str = caps.get(0).unwrap().as_str();
             if TEMP_EXCLUDE_REG_EXP.is_match(str) {
@@ -46,14 +46,17 @@ fn replace_content(
                 };
             }
             str.to_string()
-        })
-        .as_bytes()
-        .to_vec();
+        });
 
     if !is_change {
         return None;
     }
-    Some(ReplaceContentResult { content, medias })
+    Some(
+        ReplaceContentResult {
+            content: Box::from(cow.as_bytes()),
+            medias,
+        }
+    )
 }
 
 pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
@@ -66,15 +69,15 @@ pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
                     //提取出原始变量
                     if let Ok(content) = from_utf8(&file_data) &&
                         let Some(replace_content_result) = replace_content(content, text) {
-                        office.write_file(&file_name.to_string(), replace_content_result.content);
+                        office.write_file(&file_name, replace_content_result.content);
                         if replace_content_result.medias.is_empty() {
                             continue;
                         }
                         let mut relationships = vec![];
                         let name = (&file_name[file_name.rfind('/').unwrap() + 1..]).to_owned() + ".rels";
                         for (key, file) in replace_content_result.medias {
-                            let name = format!("{}media/{}", office.office().root_dir(), key);
-                            office.write_media(name, file.file);
+                            let media_name = format!("{}media/{}", office.office().root_dir(), key);
+                            office.write_media(&media_name, file.file);
                             relationships.push(RelationshipInfo {
                                 id: key.clone(),
                                 target: key,
@@ -92,7 +95,7 @@ pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
                 for (key, name) in office_medias {
                     if let Some(file) = medias.get(&key) {
                         if let Image(file) = file {
-                            office.write_media(name, file.file.clone());
+                            office.write_media(&name, file.file.clone());
                         }
                     }
                 }

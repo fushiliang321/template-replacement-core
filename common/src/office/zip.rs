@@ -18,11 +18,17 @@ pub struct RelationshipInfo {
 pub struct Zip {
     archive: ZipArchive<Cursor<Vec<u8>>>,
     office: Box<dyn Office>,
-    files: HashMap<String, Vec<u8>>,
+    files: HashMap<String, Box<[u8]>>,
     relationships: HashMap<String, Vec<RelationshipInfo>>,
 }
 
-const RELATIONSHIPS_DEFAULT_CONTENT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>"#;
+// static RELATIONSHIPS_DEFAULT_CONTENT: OnceLock<String> = OnceLock::new();
+
+fn get_relationships_default_content() -> String
+{
+    r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>"#.to_string()
+}
+
 
 fn office(archive: &mut ZipArchive<Cursor<Vec<u8>>>) -> Option<Box<dyn Office>> {
     if archive.by_name("word/document.xml").is_ok() {
@@ -129,20 +135,6 @@ impl Zip {
         names_set.iter().cloned().collect()
     }
 
-    //写入文件
-    pub fn write_file(&mut self, file_name: &String, file_data: Vec<u8>) {
-        self.files.insert(file_name.clone(), file_data);
-    }
-
-    //获取关联文件内容
-    fn get_relationship(&mut self, file_name: &String) -> Vec<u8> {
-        if let Some(content) = self.get_document_content_by_name(file_name) {
-            content
-        } else {
-            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>"#.as_bytes().to_vec()
-        }
-    }
-
     //写入关联文件信息
     pub fn write_relationships(&mut self, file_name: String, relationships: Vec<RelationshipInfo>) {
         self.relationships.insert(file_name, relationships);
@@ -186,9 +178,14 @@ impl Zip {
         media_map
     }
 
+    //写入文件
+    pub fn write_file(&mut self, file_name: &String, file_data: Box<[u8]>) {
+        self.files.insert(file_name.clone(), file_data);
+    }
+
     //写入媒体文件
-    pub fn write_media(&mut self, file_name: String, file_data: Vec<u8>) {
-        self.files.insert(file_name, file_data);
+    pub fn write_media(&mut self, file_name: &String, file_data: Box<[u8]>) {
+        self.write_file(file_name, file_data);
     }
 
     //完成写入
@@ -202,32 +199,30 @@ impl Zip {
                 continue;
             }
             let name = self.office.root_dir().to_owned() + "_rels/" + name;
-            let content = {
+            let mut content = {
                 let mut bytes = Vec::new();
-                if let Ok(mut reader) = self.archive.by_name(&name) {
-                    if let Err(_) = reader.read_to_end(&mut bytes) {
-                        bytes = RELATIONSHIPS_DEFAULT_CONTENT.as_bytes().to_vec()
-                    }
+                if let Ok(mut reader) = self.archive.by_name(&name) &&
+                    reader.read_to_end(&mut bytes).is_ok() &&
+                    let Ok(str) = String::from_utf8(bytes)
+                {
+                    str
                 } else {
-                    bytes = RELATIONSHIPS_DEFAULT_CONTENT.as_bytes().to_vec()
+                    get_relationships_default_content()
                 }
-                bytes
             };
-            if let Ok(mut str) = String::from_utf8(content) {
-                let mut relationships_text = String::new();
-                for relationship in relationships {
-                    relationships_text.push_str(&format!(r#"<Relationship Id="{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{}"/>"#, relationship.id, relationship.target))
-                }
-                match str.rfind("</Relationships>") {
-                    Some(index) => {
-                        str.insert_str(index, &relationships_text);
-                    }
-                    None => {
-                        str.push_str(&relationships_text);
-                    }
-                }
-                self.files.insert(name, str.into_bytes());
+            let mut relationships_text = String::new();
+            for relationship in relationships {
+                relationships_text.push_str(&format!(r#"<Relationship Id="{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{}"/>"#, relationship.id, relationship.target))
             }
+            match content.rfind("</Relationships>") {
+                Some(index) => {
+                    content.insert_str(index, &relationships_text);
+                }
+                None => {
+                    content.push_str(&relationships_text);
+                }
+            }
+            self.files.insert(name, content.into_bytes().into_boxed_slice());
         }
 
         for (name, file) in self.files.iter() {

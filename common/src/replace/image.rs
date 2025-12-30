@@ -65,34 +65,33 @@ impl Image {
     }
 
     pub fn to_string(&self) -> String {
-        let mut tags = format!(
+        let mut str_vec = vec![
+            r#"</w:t></w:r><w:r><w:drawing>"#
+        ];
+
+        let tags = format!(
             r#"<wp:extent cx="{}" cy="{}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:blipFill><a:blip r:embed="{}"/></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0" /><a:ext cx="{}" cy="{}" /></a:xfrm><a:prstGeom prst="rect"><a:avLst /></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic>"#,
             self.wp_extent.cx, self.wp_extent.cy, self.id, self.wp_extent.cx, self.wp_extent.cy
         );
 
         match &self.text_wrap {
             TextWrapType::Embed => {
-                tags = format!(
-                    r#"<wp:inline distT="0" distB="0" distL="0" distR="0">{}</wp:inline>"#,
-                    tags
-                );
+                str_vec.push(r#"<wp:inline distT="0" distB="0" distL="0" distR="0">"#);
+                str_vec.push(&tags);
+                str_vec.push(r#"</wp:inline>"#);
             }
             TextWrapType::BelowText => {
-                tags = format!(
-                    r#"<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:positionH relativeFrom="character"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>0</wp:posOffset></wp:positionV>{}</wp:anchor>"#,
-                    tags
-                );
+                str_vec.push(r#"<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:positionH relativeFrom="character"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>0</wp:posOffset></wp:positionV>"#);
+                str_vec.push(&tags);
+                str_vec.push(r#"</wp:anchor>"#);
             }
             TextWrapType::AboveText => {
-                tags = format!(
-                    r#"<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:positionH relativeFrom="character"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>0</wp:posOffset></wp:positionV>{}</wp:anchor>"#,
-                    tags
-                );
+                str_vec.push(r#"<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:positionH relativeFrom="character"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>0</wp:posOffset></wp:positionV>"#);
+                str_vec.push(&tags);
+                str_vec.push(r#"</wp:anchor>"#);
             }
         }
-        format!(
-            r#"</w:t></w:r><w:r><w:drawing>{}</w:drawing></w:r><w:r><w:t>"#,
-            tags
-        )
+        str_vec.push(r#"</w:drawing></w:r><w:r><w:t>"#);
+        str_vec.join("")
     }
 }

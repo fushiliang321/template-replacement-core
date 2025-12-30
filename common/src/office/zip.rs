@@ -205,16 +205,23 @@ impl Zip {
                     get_relationships_default_content()
                 }
             };
-            let mut relationships_text = String::new();
+            if content.is_empty() {
+                continue;
+            }
+            let mut relationships_text_vec = vec![];
             for relationship in relationships {
-                relationships_text.push_str(&format!(r#"<Relationship Id="{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{}"/>"#, relationship.id, relationship.target))
+                relationships_text_vec.push(r#"<Relationship Id=""#);
+                relationships_text_vec.push(&relationship.id);
+                relationships_text_vec.push(r#"" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/"#);
+                relationships_text_vec.push(&relationship.target);
+                relationships_text_vec.push(r#""/>"#);
             }
             match content.rfind("</Relationships>") {
                 Some(index) => {
-                    content.insert_str(index, &relationships_text);
+                    content.insert_str(index, &relationships_text_vec.join(""));
                 }
                 None => {
-                    content.push_str(&relationships_text);
+                    content.push_str( &relationships_text_vec.join(""));
                 }
             }
             self.files.insert(name, content.into_bytes().into_boxed_slice());

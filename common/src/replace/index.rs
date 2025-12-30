@@ -78,13 +78,13 @@ pub fn replace(file: &mut File, data: &Data) -> Vec<u8> {
                         for (id, file) in replace_content_result.medias {
                             let target = {
                                 if file.suffix.is_empty() {
-                                    format!("{}.{}", id, file.suffix)
+                                    vec![&id, ".", &file.suffix].join("")
                                 } else {
                                     id.clone()
                                 }
                             };
-                            let media_name = format!("{}media/{}", office.office().root_dir(), target);
-                            office.write_file(&media_name, file.file);
+                            let media_name_str = vec![office.office().root_dir(), "media/", &target];
+                            office.write_file(&media_name_str.join(""), file.file);
                             relationships.push(RelationshipInfo {
                                 id,
                                 target,

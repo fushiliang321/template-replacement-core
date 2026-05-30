@@ -2,14 +2,16 @@ param(
     $crate
 )
 
+$wasmPaths = @{
+    "general"          = "pkg/template_replacement_core_wasm_bg.wasm"
+    "sign"             = "pkg/template_replacement_sign_core_wasm_bg.wasm"
+    "general-polyfill" = "pkg/template_replacement_core_wasm_polyfill_polyfill_bg.wasm"
+    "sign-polyfill"    = "pkg/template_replacement_sign_core_wasm_polyfill_bg.wasm"
+}
+
 if ($crate -eq $null)
 {
-    $crates = @(
-        "general",
-        "sign",
-        "general-polyfill",
-        "sign-polyfill"
-    )
+    $crates = @($wasmPaths.Keys)
 }
 else
 {
@@ -19,7 +21,7 @@ else
 foreach ($crate in $crates)
 {
     Write-Host "Building $crate..." -ForegroundColor Green
-    Push-Location $crate
+    Push-Location (Join-Path $PSScriptRoot $crate)
     try
     {
         wasm-pack build --release --target web
@@ -27,14 +29,7 @@ foreach ($crate in $crates)
         {
             exit $LASTEXITCODE
         }
-        if ($crate -match "sign")
-        {
-            wasm-strip pkg/template_replacement_sign_core_wasm_bg.wasm
-        }
-        else
-        {
-            wasm-strip pkg/template_replacement_core_wasm_bg.wasm
-        }
+        wasm-strip $wasmPaths[$crate]
         if ($LASTEXITCODE -ne 0)
         {
             exit $LASTEXITCODE

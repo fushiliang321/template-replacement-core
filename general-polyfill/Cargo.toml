@@ -1,5 +1,5 @@
 [package]
-name = "template-replacement-core-wasm"
+name = "template-replacement-core-wasm-polyfill-polyfill"
 version = "1.8.3"
 edition = "2024"
 description = "模板替换核心wasm库"
@@ -11,3 +11,6 @@ common = { path = "../common", features = ["general"] }
 [lib]
 path = "src/lib.rs"
 crate-type = ["cdylib"]
+
+[package.metadata.wasm-bindgen]
+disable_multi_value = true

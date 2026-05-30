@@ -6,7 +6,9 @@ if ($crate -eq $null)
 {
     $crates = @(
         "general",
-        "sign"
+        "sign",
+        "general-polyfill",
+        "sign-polyfill"
     )
 }
 else
@@ -25,7 +27,7 @@ foreach ($crate in $crates)
         {
             exit $LASTEXITCODE
         }
-        if ($crate -eq "sign")
+        if ($crate -match "sign")
         {
             wasm-strip pkg/template_replacement_sign_core_wasm_bg.wasm
         }

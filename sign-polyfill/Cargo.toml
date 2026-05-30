@@ -1,5 +1,5 @@
 [package]
-name = "template-replacement-sign-core-wasm"
+name = "template-replacement-sign-core-wasm-polyfill"
 version = "1.8.3"
 edition = "2024"
 description = "模板替换核心wasm库（签名版）"
@@ -11,3 +11,6 @@ common = { path = "../common", features = ["param-sign"] }
 [lib]
 path = "src/lib.rs"
 crate-type = ["cdylib"]
+
+[package.metadata.wasm-bindgen]
+disable_multi_value = true

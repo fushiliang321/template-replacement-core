@@ -1,5 +1,5 @@
 [workspace]
-members = ["sign", "common", "general"]
+members = ["sign", "common", "general", "general-polyfill", "sign-polyfill"]
 resolver = "2"
 
 [profile.release]

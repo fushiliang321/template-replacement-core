@@ -13,5 +13,9 @@
   "types": "template_replacement_sign_core_wasm.d.ts",
   "sideEffects": [
     "./snippets/*"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fushiliang321/template-replacement-core.git"
+  }
 }

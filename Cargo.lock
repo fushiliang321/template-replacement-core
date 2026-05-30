@@ -768,7 +768,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "template-replacement-core-wasm-polyfill-polyfill"
+name = "template-replacement-core-wasm-polyfill"
 version = "1.8.4"
 dependencies = [
  "common",

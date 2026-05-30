@@ -2,6 +2,8 @@ name: template-replacement-core-wasm
 
 on:
   push:
+    tags:
+      - 'v*'
 
 permissions:
   id-token: write  # Required for OIDC
@@ -17,6 +19,26 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false  # never use caching in release builds
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+      - name: Install wasm-strip
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y wabt
+      - name: Build WASM packages
+        run: |-
+          REPO_URL="https://github.com/fushiliang321/template-replacement-core"
+          for crate in general sign general-polyfill sign-polyfill; do
+            echo "Building $crate..."
+            cd $crate
+            wasm-pack build --release --target web
+            wasm-strip pkg/*.wasm
+            cd pkg
+            node -e "const f=require('fs'),p='package.json';const j=JSON.parse(f.readFileSync(p,'utf8'));j.repository={type:'git',url:'$REPO_URL'};f.writeFileSync(p,JSON.stringify(j,null,2)+'\n','utf8')"
+            cd ../..
+          done
       - run: cd general/pkg && npm publish
       - run: cd general-polyfill/pkg && npm publish
       - run: cd sign/pkg && npm publish

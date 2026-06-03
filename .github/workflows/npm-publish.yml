@@ -25,6 +25,8 @@ jobs:
         run: |-
           sudo apt-get update
           sudo apt-get install -y wabt
+      - name: Install wasm-bindgen-cli (for polyfill re-build)
+        run: cargo install wasm-bindgen-cli --version 0.2.93
       - name: Build WASM packages
         run: |-
           REPO_URL="git+https://github.com/fushiliang321/template-replacement-core.git"
@@ -32,10 +34,10 @@ jobs:
             echo "Building $crate..."
             cd $crate
             if [[ "$crate" == *"-polyfill" ]]; then
-              wasm-pack build --release --target web -- --disable-multi-value
-            else
-              wasm-pack build --release --target web
+              export WASM_BINDGEN_FLAGS="--disable-multi-value"
             fi
+            wasm-pack build --release --target web
+            export WASM_BINDGEN_FLAGS=
             wasm-strip pkg/*.wasm
             cd pkg
             node -e "const f=require('fs'),p='package.json';const j=JSON.parse(f.readFileSync(p,'utf8'));j.repository={type:'git',url:'$REPO_URL'};f.writeFileSync(p,JSON.stringify(j,null,2)+'\n','utf8')"

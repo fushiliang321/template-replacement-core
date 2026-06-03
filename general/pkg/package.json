@@ -2,7 +2,7 @@
   "name": "template-replacement-core-wasm",
   "type": "module",
   "description": "模板替换核心wasm库",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "license": "Apache 2.0",
   "files": [
     "template_replacement_core_wasm_bg.wasm",

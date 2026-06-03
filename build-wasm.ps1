@@ -20,21 +20,43 @@ else
     $crates = @($crate)
 }
 
+# Check and install wasm-bindgen-cli 0.2.93 for polyfill re-build
+$hasWasmBindgen = $false
+try
+{
+    $wbVersion = & wasm-bindgen --version 2>&1
+    if ($wbVersion -match "0\.2\.93")
+    {
+        $hasWasmBindgen = $true
+    }
+}
+catch {}
+if (-not $hasWasmBindgen)
+{
+    Write-Host "Installing wasm-bindgen-cli 0.2.93 (for polyfill builds)..." -ForegroundColor Cyan
+    cargo install wasm-bindgen-cli --version 0.2.93
+}
+
 foreach ($crate in $crates)
 {
     Write-Host "Building $crate..." -ForegroundColor Green
     Push-Location (Join-Path $PSScriptRoot $crate)
     try
     {
-        $wasmPackArgs = @("build", "--release", "--target", "web")
-        if ($crate -like "*-polyfill")
-        {
-            $wasmPackArgs += @("--", "--disable-multi-value")
-        }
-        & wasm-pack $wasmPackArgs
+        wasm-pack build --release --target web
         if ($LASTEXITCODE -ne 0)
         {
             exit $LASTEXITCODE
+        }
+        if ($crate -like "*-polyfill")
+        {
+            $wasmFile = (Get-ChildItem -Path "target/wasm32-unknown-unknown/release" -Filter "*.wasm" | Select-Object -First 1).FullName
+            Write-Host "Re-running wasm-bindgen with --disable-multi-value..." -ForegroundColor Cyan
+            wasm-bindgen $wasmFile --target web --disable-multi-value --out-dir pkg
+            if ($LASTEXITCODE -ne 0)
+            {
+                exit $LASTEXITCODE
+            }
         }
         wasm-strip $wasmPaths[$crate]
         if ($LASTEXITCODE -ne 0)

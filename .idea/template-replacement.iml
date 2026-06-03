@@ -12,6 +12,8 @@
       <sourceFolder url="file://$MODULE_DIR$/test/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/general-polyfill/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sign-polyfill/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/common/out/de" />
+      <excludeFolder url="file://$MODULE_DIR$/common/out/en" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

@@ -1,9 +1,9 @@
 [package]
 name = "template-replacement-core-wasm"
-version = "1.8.5"
-edition = "2024"
 description = "模板替换核心wasm库"
-license = "Apache 2.0"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
 common = { path = "../common", features = ["general"] }

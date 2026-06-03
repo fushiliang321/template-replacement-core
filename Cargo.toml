@@ -1,6 +1,11 @@
 [workspace]
-members = ["sign", "common", "general", "general-polyfill", "sign-polyfill"]
+members = ["sign", "common", "general"]
 resolver = "2"
+
+[workspace.package]
+version = "1.8.6"
+edition = "2024"
+license = "Apache 2.0"
 
 [profile.release]
 opt-level = 3  # 最大化性能

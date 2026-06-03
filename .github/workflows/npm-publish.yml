@@ -31,7 +31,11 @@ jobs:
           for crate in general sign general-polyfill sign-polyfill; do
             echo "Building $crate..."
             cd $crate
-            wasm-pack build --release --target web
+            if [[ "$crate" == *"-polyfill" ]]; then
+              wasm-pack build --release --target web -- --disable-multi-value
+            else
+              wasm-pack build --release --target web
+            fi
             wasm-strip pkg/*.wasm
             cd pkg
             node -e "const f=require('fs'),p='package.json';const j=JSON.parse(f.readFileSync(p,'utf8'));j.repository={type:'git',url:'$REPO_URL'};f.writeFileSync(p,JSON.stringify(j,null,2)+'\n','utf8')"

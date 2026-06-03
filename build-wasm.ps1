@@ -26,7 +26,12 @@ foreach ($crate in $crates)
     Push-Location (Join-Path $PSScriptRoot $crate)
     try
     {
-        wasm-pack build --release --target web
+        $wasmPackArgs = @("build", "--release", "--target", "web")
+        if ($crate -like "*-polyfill")
+        {
+            $wasmPackArgs += @("--", "--disable-multi-value")
+        }
+        & wasm-pack $wasmPackArgs
         if ($LASTEXITCODE -ne 0)
         {
             exit $LASTEXITCODE

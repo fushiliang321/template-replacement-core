@@ -7,6 +7,8 @@ license.workspace = true
 
 [dependencies]
 common = { path = "../common", features = ["param-sign"] }
+wasm-bindgen.workspace = true
+js-sys.workspace = true
 
 [lib]
 path = "src/lib.rs"

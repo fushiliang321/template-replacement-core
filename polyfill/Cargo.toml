@@ -1,5 +1,5 @@
 [workspace]
-members = ["sign", "common", "general"]
+members = ["sign", "general"]
 resolver = "2"
 
 [workspace.package]
@@ -15,5 +15,5 @@ panic = 'abort'  # 出现 panic 时直接终止程序
 debug = false
 
 [workspace.dependencies]
-wasm-bindgen = "0.2.123"
-js-sys = "0.3.100"
+wasm-bindgen = "=0.2.93"
+js-sys = "=0.3.70"

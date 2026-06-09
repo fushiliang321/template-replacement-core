@@ -2,39 +2,15 @@ param(
     $crate
 )
 
-$wasmPaths = @{
-    "general" = "pkg/template_replacement_core_wasm_bg.wasm"
-    "sign" = "pkg/template_replacement_sign_core_wasm_bg.wasm"
-    "general-polyfill" = "pkg/template_replacement_core_wasm_polyfill_bg.wasm"
-    "sign-polyfill" = "pkg/template_replacement_sign_core_wasm_polyfill_bg.wasm"
-}
-
 $repositoryUrl = "git+https://github.com/fushiliang321/template-replacement-core.git"
 
 if ($crate -eq $null)
 {
-    $crates = @($wasmPaths.Keys)
+    $crates = @("general", "sign", "polyfill/general", "polyfill/sign")
 }
 else
 {
     $crates = @($crate)
-}
-
-# Check and install wasm-bindgen-cli 0.2.93 for polyfill re-build
-$hasWasmBindgen = $false
-try
-{
-    $wbVersion = & wasm-bindgen --version 2>&1
-    if ($wbVersion -match "0\.2\.93")
-    {
-        $hasWasmBindgen = $true
-    }
-}
-catch {}
-if (-not $hasWasmBindgen)
-{
-    Write-Host "Installing wasm-bindgen-cli 0.2.93 (for polyfill builds)..." -ForegroundColor Cyan
-    cargo install wasm-bindgen-cli --version 0.2.93
 }
 
 foreach ($crate in $crates)
@@ -43,31 +19,38 @@ foreach ($crate in $crates)
     Push-Location (Join-Path $PSScriptRoot $crate)
     try
     {
+        if ($crate -like "polyfill/*")
+        {
+            # For polyfill crates, disable multi-value for old browser compatibility
+            Write-Host "Building with multi-value disabled for old browser compatibility..." -ForegroundColor Cyan
+            $env:RUSTFLAGS = "-C target-feature=-multivalue"
+        }
+
         wasm-pack build --release --target web
         if ($LASTEXITCODE -ne 0)
         {
             exit $LASTEXITCODE
         }
-        if ($crate -like "*-polyfill")
+
+        # Clear RUSTFLAGS after build
+        if ($crate -like "polyfill/*")
         {
-            $wasmFile = (Get-ChildItem -Path "target/wasm32-unknown-unknown/release" -Filter "*.wasm" | Select-Object -First 1).FullName
-            Write-Host "Re-running wasm-bindgen with --disable-multi-value..." -ForegroundColor Cyan
-            wasm-bindgen $wasmFile --target web --disable-multi-value --out-dir pkg
+            Remove-Item Env:\RUSTFLAGS
+        }
+        # Strip WASM files to reduce size
+        Get-ChildItem -Path "pkg" -Filter "*.wasm" | ForEach-Object {
+            Write-Host "Stripping $( $_.Name )..." -ForegroundColor Cyan
+            wasm-strip $_.FullName
             if ($LASTEXITCODE -ne 0)
             {
                 exit $LASTEXITCODE
             }
         }
-        wasm-strip $wasmPaths[$crate]
-        if ($LASTEXITCODE -ne 0)
-        {
-            exit $LASTEXITCODE
-        }
         $pkgJsonPath = Join-Path (Join-Path $PSScriptRoot $crate) "pkg/package.json"
         $pkgJson = Get-Content $pkgJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
         $pkgJson | Add-Member -NotePropertyName "repository" -NotePropertyValue @{ type = "git"; url = $repositoryUrl } -Force
         $jsonText = $pkgJson | ConvertTo-Json -Depth 3
-        [System.IO.File]::WriteAllText($pkgJsonPath, $jsonText, [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText($pkgJsonPath, $jsonText,[System.Text.UTF8Encoding]::new($false))
         node -e "const f=require('fs'),p=process.argv[1];f.writeFileSync(p,JSON.stringify(JSON.parse(f.readFileSync(p,'utf8')),null,2)+'\n','utf8')" $pkgJsonPath
     }
     finally

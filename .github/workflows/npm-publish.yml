@@ -25,33 +25,36 @@ jobs:
         run: |-
           sudo apt-get update
           sudo apt-get install -y wabt
-      - name: Install wasm-bindgen-cli (for polyfill re-build)
-        run: cargo install wasm-bindgen-cli --version 0.2.93
       - name: Build WASM packages
         run: |-
           REPO_URL="git+https://github.com/fushiliang321/template-replacement-core.git"
-          for crate in general sign general-polyfill sign-polyfill; do
+          for crate in general sign polyfill/general polyfill/sign; do
             echo "Building $crate..."
             cd $crate
-            if [[ "$crate" == *"-polyfill" ]]; then
-              export WASM_BINDGEN_FLAGS="--disable-multi-value"
+            if [[ "$crate" == polyfill/* ]]; then
+              export RUSTFLAGS="-C target-feature=-multivalue"
             fi
             wasm-pack build --release --target web
-            export WASM_BINDGEN_FLAGS=
-            wasm-strip pkg/*.wasm
+            if [[ "$crate" == polyfill/* ]]; then
+              unset RUSTFLAGS
+            fi
+            for wasm_file in pkg/*.wasm; do
+              echo "Stripping $wasm_file..."
+              wasm-strip "$wasm_file"
+            done
             cd pkg
             node -e "const f=require('fs'),p='package.json';const j=JSON.parse(f.readFileSync(p,'utf8'));j.repository={type:'git',url:'$REPO_URL'};f.writeFileSync(p,JSON.stringify(j,null,2)+'\n','utf8')"
             cd ../..
           done
       - name: Publish general
         continue-on-error: true
-        run: cd general/pkg && npm publish
-      - name: Publish general-polyfill
-        continue-on-error: true
-        run: cd general-polyfill/pkg && npm publish
+        run: npm publish --access public general/pkg
       - name: Publish sign
         continue-on-error: true
-        run: cd sign/pkg && npm publish
-      - name: Publish sign-polyfill
+        run: npm publish --access public sign/pkg
+      - name: Publish polyfill/general
         continue-on-error: true
-        run: cd sign-polyfill/pkg && npm publish
+        run: npm publish --access public polyfill/general/pkg
+      - name: Publish polyfill/sign
+        continue-on-error: true
+        run: npm publish --access public polyfill/sign/pkg

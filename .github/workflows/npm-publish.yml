@@ -28,16 +28,10 @@ jobs:
       - name: Build WASM packages
         run: |-
           REPO_URL="git+https://github.com/fushiliang321/template-replacement-core.git"
-          for crate in general sign polyfill/general polyfill/sign; do
+          for crate in general sign; do
             echo "Building $crate..."
             cd $crate
-            if [[ "$crate" == polyfill/* ]]; then
-              export RUSTFLAGS="-C target-feature=-multivalue"
-            fi
             wasm-pack build --release --target web
-            if [[ "$crate" == polyfill/* ]]; then
-              unset RUSTFLAGS
-            fi
             for wasm_file in pkg/*.wasm; do
               echo "Stripping $wasm_file..."
               wasm-strip "$wasm_file"
@@ -46,6 +40,22 @@ jobs:
             node -e "const f=require('fs'),p='package.json';const j=JSON.parse(f.readFileSync(p,'utf8'));j.repository={type:'git',url:'$REPO_URL'};f.writeFileSync(p,JSON.stringify(j,null,2)+'\n','utf8')"
             cd ../..
           done
+          cd polyfill
+          for crate in general sign; do
+            echo "Building polyfill/$crate..."
+            cd $crate
+            export RUSTFLAGS="-C target-feature=-multivalue"
+            wasm-pack build --release --target web
+            unset RUSTFLAGS
+            for wasm_file in pkg/*.wasm; do
+              echo "Stripping $wasm_file..."
+              wasm-strip "$wasm_file"
+            done
+            cd pkg
+            node -e "const f=require('fs'),p='package.json';const j=JSON.parse(f.readFileSync(p,'utf8'));j.repository={type:'git',url:'$REPO_URL'};f.writeFileSync(p,JSON.stringify(j,null,2)+'\n','utf8')"
+            cd ../..
+          done
+          cd ..
       - name: Publish general
         continue-on-error: true
         run: npm publish --access public general/pkg

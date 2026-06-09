@@ -58,13 +58,13 @@ jobs:
           cd ..
       - name: Publish general
         continue-on-error: true
-        run: npm publish --access public general/pkg
+        run: cd general/pkg && npm publish
       - name: Publish sign
         continue-on-error: true
-        run: npm publish --access public sign/pkg
+        run: cd sign/pkg && npm publish
       - name: Publish polyfill/general
         continue-on-error: true
-        run: npm publish --access public polyfill/general/pkg
+        run: cd polyfill/general/pkg && npm publish
       - name: Publish polyfill/sign
         continue-on-error: true
-        run: npm publish --access public polyfill/sign/pkg
+        run: cd polyfill/sign/pkg && npm publish
